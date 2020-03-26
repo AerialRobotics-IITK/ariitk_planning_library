@@ -10,15 +10,9 @@
 
   <author email="dvyanshu@iitk.ac.in">Divyanshu Gangwar</author>
 
-
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <exec_depend>roscpp</exec_depend>
-
-  <!--
-   <export>
-
-  </export>
-   -->
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  
+  <depend>roscpp</depend>
+  
 </package>
