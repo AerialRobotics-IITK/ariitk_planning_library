@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "intelliSenseMode": "clang-x64",
+            "includePath": [
+                "${default}",
+                "${workspaceFolder}/global_planner/include"
+            ]
+        }
+    ],
+    "version": 4
+}

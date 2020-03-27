@@ -20,5 +20,6 @@ MapServer::MapServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_privat
     }
 }
 
+voxblox::EsdfMap::Ptr MapServer::getESDFMapPtr() { return esdf_map_ptr_; }
 
 } // namespace ariitk::global_planner

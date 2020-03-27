@@ -8,6 +8,7 @@ namespace ariitk::global_planner {
 class MapServer {
     public:
         MapServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+        voxblox::EsdfMap::Ptr getESDFMapPtr();
 
     private:
         voxblox::EsdfServer voxblox_server_;

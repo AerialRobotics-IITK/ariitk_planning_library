@@ -8,7 +8,7 @@
     <include file="$(find simulator)/launch/sim.launch" />
     
     <group ns="$(arg mav_name)">
-        <node name="voxblox_node" pkg="global_planner" type="map_server_node" output="screen" clear_params="true">
+        <node name="voxblox_astar_planner" pkg="global_planner" type="a_star_planner_node" output="screen" clear_params="true">
           <remap from="pointcloud" to="vi_sensor/camera_depth/depth/points"/>
           <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
           <remap from="voxblox_node/tsdf_map_out" to="tsdf_map" />
@@ -36,6 +36,6 @@
         </node>
     </group>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find simulator)/rviz/default.rviz"/>
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find simulator)/rviz/default.rviz"/> -->
 
 </launch>

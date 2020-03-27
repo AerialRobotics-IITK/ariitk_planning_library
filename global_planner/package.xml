@@ -13,5 +13,8 @@
   
   <depend>roscpp</depend>
   <depend>voxblox_ros</depend>
+  <depend>mav_msgs</depend>
+  <depend>mav_planning_msgs</depend>
+  <depend>mav_planning_rviz</depend>
 
 </package>
