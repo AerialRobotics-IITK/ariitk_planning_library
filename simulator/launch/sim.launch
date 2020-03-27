@@ -2,47 +2,48 @@
 <launch>
 	<arg name="mav_name" default="firefly"/>
 	<arg name="enable_logging" default="false" />
-  	<arg name="enable_ground_truth" default="true" />
+	<arg name="enable_ground_truth" default="true" />
 	<arg name="log_file" default="$(arg mav_name)" />
 	<arg name="world_name" default="basic"/>
 
 	<!-- world path -->
-    <arg name="world_path" default="$(find simulator)/worlds/maze_house.world"/>
+	<arg name="world_path" default="$(find simulator)/worlds/maze_house.world"/>
     
-    <!-- Gazebo configs -->
-    <arg name="gui" default="true"/>
-    <arg name="debug" default="false"/>
-    <arg name="verbose" default="false"/>
-    <arg name="paused" default="true"/>
+	<!-- Gazebo configs -->
+	<arg name="gui" default="true"/>
+	<arg name="debug" default="false"/>
+	<arg name="verbose" default="false"/>
+	<arg name="paused" default="true"/>
 
 	<!-- Gazebo variables -->
 	<env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
-    <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
+	<env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
 
 	<include file="$(find gazebo_ros)/launch/empty_world.launch">
 		<arg name="world_name" value="$(arg world_path)" />
 		<arg name="debug" value="$(arg debug)"/> 
-        <arg name="paused" value="$(arg paused)"/>
+    	<arg name="paused" value="$(arg paused)"/>
 		<arg name="gui" value="$(arg gui)"/>
 		<arg name="verbose" value="$(arg verbose)"/>
 	</include>
 
 	<group ns="$(arg mav_name)">
 		<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
-		  <arg name="mav_name" value="$(arg mav_name)" />
-		  <arg name="model" value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
-		  <arg name="enable_logging" value="$(arg enable_logging)" />
-		  <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-		  <arg name="log_file" value="$(arg log_file)"/>
+			<arg name="mav_name" value="$(arg mav_name)" />
+		  	<arg name="model" value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
+		  	<arg name="enable_logging" value="$(arg enable_logging)" />
+		  	<arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+		  	<arg name="log_file" value="$(arg log_file)"/>
 		</include>
 		<node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen"/>
 		<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 		<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+		<node pkg="tf" type="static_transform_publisher" name="world_odom_broadcaster" args="0 0 0 0 0 0 1 world odom 100" />
 	</group>
 
-    <include file="$(find mav_linear_mpc)/launch/mav_linear_mpc_sim.launch">
-        <arg name="mav_name" value="$(arg mav_name)"/>
-    </include>
+	<include file="$(find mav_linear_mpc)/launch/mav_linear_mpc_sim.launch">
+    	<arg name="mav_name" value="$(arg mav_name)"/>
+	</include>
 
 </launch>
 
