@@ -4,8 +4,6 @@
     <arg name="voxel_size" default="0.2"/>
     <arg name="clear_radius" default="1"/>
     <arg name="frame_id" default="odom"/>
-
-    <include file="$(find simulator)/launch/sim.launch" />
     
     <group ns="$(arg mav_name)">
         <node name="voxblox_astar_planner" pkg="global_planner" type="a_star_planner_node" output="screen" clear_params="true">
