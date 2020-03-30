@@ -12,7 +12,4 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
-
-  <depend>mav_linear_mpc</depend>
-
 </package>

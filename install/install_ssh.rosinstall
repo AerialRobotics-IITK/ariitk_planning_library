@@ -11,5 +11,8 @@
 - git: {local-name: mav_trajectory_generation, uri: 'git@github.com:ethz-asl/mav_trajectory_generation.git'}
 - git: {local-name: gflags_catkin, uri: 'git@github.com:ethz-asl/gflags_catkin.git'}
 - git: {local-name: rotors_simulator, uri: 'git@github.com:ethz-asl/rotors_simulator.git'}
-- git: {local-name: mav_nonlinear_mpc, uri: 'git@github.com:AerialRobotics-IITK/mav_control_rw.git', version:'ARIITK'}
-- git: {local-name: mav_voxblox_planning, uri: 'git@github.com:ethz-asl/mav_voxblox_planning.git'}
+- git: {local-name: mav_nonlinear_mpc, uri: 'git@github.com:AerialRobotics-IITK/mav_control_rw.git', version: 'feature/planning_lib_testing'}
+- git: {local-name: mav_voxblox_planning, uri: 'git@github.com:AerialRobotics-IITK/mav_voxblox_planning.git', version: 'feature/planning_lib_testing'}
+- git: {local-name: yaml_cpp_catkin, uri: 'git@github.com:ethz-asl/yaml_cpp_catkin.git'}
+- git: {local-name: catkin_boost_python_buildtool, uri: 'git@github.com:ethz-asl/catkin_boost_python_buildtool.git'}
+- git: {local-name: numpy_eigen, uri: 'git@github.com:ethz-asl/numpy_eigen.git'}
