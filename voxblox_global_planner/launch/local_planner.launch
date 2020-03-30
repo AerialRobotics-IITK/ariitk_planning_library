@@ -16,16 +16,14 @@
             <param name="esdf_max_distance_m" value="2.0" />
             <param name="update_mesh_every_n_sec" value="0.0" />
             <param name="traversability_radius" value="$(arg robot_radius)" />
-            <param name="publish_traversable" value="true" />
             <param name="slice_level" value="1.0" />
-            <param name="publish_slices" value="true" />
       
             <param name="local_frame_id" value="$(arg frame_id)" />
             <param name="world_frame" value="$(arg frame_id)" />
-            <param name="replan_dt" value="0.25" />
+            <param name="replan_dt" value="0.1" />
             <param name="command_publishing_dt" value="0.25" />
             <param name="replan_lookahead_sec" value="1.0" />
-            <param name="mpc_prediction_horizon" value="300" />
+            <param name="mpc_prediction_horizon" value="30" />
       
             <param name="robot_radius" value="$(arg robot_radius)" />
             <param name="planning_horizon_m" value="20.0" />

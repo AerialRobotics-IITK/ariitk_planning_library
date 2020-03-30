@@ -4,9 +4,9 @@
   <arg name="frame_id" default="odom" />
 
   <group ns="$(arg mav_name)">
-    <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true">
+    <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true" respawn="true">
       <param name="visualize" value="true" />
-      <param name="robot_radius" value="0.5" />
+      <param name="robot_radius" value="0.4" />
       <param name="frame_id" value="$(arg frame_id)" />
       <param name="world_frame" value="$(arg frame_id)" />
       <param name="split_at_collisions" value="true" />
