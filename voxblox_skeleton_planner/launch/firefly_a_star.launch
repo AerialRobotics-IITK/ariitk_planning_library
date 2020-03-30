@@ -1,59 +1,103 @@
+<?xml version="1.0"?>
 <launch>
   <arg name="mav_name" default="firefly"/>
   <arg name="frame_id" default="odom" />
   <arg name="voxel_size" default="0.2" />
-    <arg name="clear_radius" default="1.0" />
+  <arg name="clear_radius" default="1.0" />
+  <arg name="robot_radius" default="0.4"/>
 
   <group ns="$(arg mav_name)">
-    <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true" launch-prefix="gdb --args">
+    
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr" clear_params="true">
+      <remap from="pointcloud" to="vi_sensor/camera_depth/depth/points"/>
+      <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
+      <remap from="voxblox_node/tsdf_map_out" to="tsdf_map" />
 
+      <param name="publish_tsdf_map" value="true" />
+      <param name="publish_esdf_map" value="true" />
+      <param name="update_mesh_every_n_sec" value="0.25" />
+      <param name="update_esdf_every_n_sec" value="0.25" />
+      <param name="publish_map_every_n_sec" value="0.25" />
+
+      <param name="method" value="fast" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="16" />
+      <param name="esdf_max_distance_m" value="2.0" />
+      <param name="max_ray_length_m" value="10.0" />
+      <param name="voxel_carving_enabled" value="true" />
+      <param name="color_mode" value="color" />
+      <param name="use_tf_transforms" value="true" />
+      <param name="min_time_between_msgs_sec" value="0.10" />
+      <param name="clear_sphere_for_planning" value="true" />
+      <param name="occupied_sphere_radius" value="4.0" />
+      <param name="clear_sphere_radius" value="$(arg clear_radius)" />
+      <param name="slice_level" value="1.0" />
+      <param name="world_frame" value="$(arg frame_id)" />
+      <param name="verbose" value="false" />
+
+      <param name="esdf_add_occupied_crust" value="true" />
+      <param name="publish_pointclouds" value="true" />
+      <param name="publish_slices" value="true" />
+      <param name="esdf_min_diff_m" value="0.0" />
+      <param name="publish_traversable" value="true" />
+    </node>
+
+
+    <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true">
       <param name="visualize" value="true" />
       <param name="robot_radius" value="0.5" />
-
-      <param name="num_seconds_to_plan" value="2.0" />
-      <param name="do_smoothing" value="true" />
       <param name="frame_id" value="$(arg frame_id)" />
       <param name="world_frame" value="$(arg frame_id)" />
-      <param name="trust_approx_solution" value="false" />
-      <param name="publish_traversable" value="true" />
       <param name="split_at_collisions" value="true" />
       <param name="optimize_time" value="true" />
       <param name="verbose" value="false" />
 
+      <param name="generate_by_layer_neighbors" value="true" />
+      <!-- If using full euclidean: 0.78 (45 degrees) -->
+      <!-- If using quasi-Euclidean: 1.57 (90 degrees) -->
+      <param name="min_separation_angle" value="0.78" />
+      <param name="update_esdf" value="false" />
+     
+      <remap from="voxblox_global_planner/esdf_map_in" to="esdf_map" />
+      <remap from="voxblox_global_planner/tsdf_map_in" to="tsdf_map" />
+      <remap from="odometry" to="ground_truth/odometry" />
+    </node>
 
-    <param name="generate_by_layer_neighbors" value="true" />
-    <!-- If using full euclidean: 0.78 (45 degrees) -->
-    <!-- If using quasi-Euclidean: 1.57 (90 degrees) -->
-    <param name="min_separation_angle" value="0.35" />
-    <param name="update_esdf" value="false" />
-    <param name="esdf_min_diff_m" value="0.0" />
-    <param name="esdf_add_occupied_crust" value="true" />
-    <param name="publish_pointclouds" value="true" />
-    <param name="publish_slices" value="true" />
+    <node name="mav_local_planner" pkg="mav_local_planner" type="mav_local_planner_node" args="-alsologtostderr" output="screen" clear_params="true">
+      <remap from="odometry" to="ground_truth/odometry" />
+      <remap from="mav_local_planner/esdf_map_in" to="esdf_map" />
+      <remap from="mav_local_planner/tsdf_map_in" to="tsdf_map" />
 
-    <remap from="pointcloud" to="vi_sensor/camera_depth/depth/points"/>
-    <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
-    <remap from="voxblox_node/tsdf_map_out" to="tsdf_map" />
-    <!-- Publishing settings. -->
-    <param name="publish_tsdf_map" value="true" />
-    <param name="publish_esdf_map" value="true" />
-    <param name="update_mesh_every_n_sec" value="0.25" />
-    <param name="update_esdf_every_n_sec" value="0.25" />
-    <param name="publish_map_every_n_sec" value="0.25" />
-    <param name="method" value="fast" />
-    <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
-    <param name="tsdf_voxels_per_side" value="16" />
-    <param name="esdf_max_distance_m" value="2.0" />
-    <param name="max_ray_length_m" value="10.0" />
-    <param name="voxel_carving_enabled" value="true" />
-    <param name="color_mode" value="color" />
-    <param name="use_tf_transforms" value="true" />
-    <param name="min_time_between_msgs_sec" value="0.10" />
-    <param name="clear_sphere_for_planning" value="true" />
-    <param name="occupied_sphere_radius" value="4.0" />
-    <param name="clear_sphere_radius" value="$(arg clear_radius)" />
-    <param name="slice_level" value="1.0" />
-    <param name="world_frame" value="$(arg frame_id)" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="16" />
+      <param name="esdf_max_distance_m" value="2.0" />
+      <param name="update_mesh_every_n_sec" value="0.0" />
+      <param name="traversability_radius" value="$(arg robot_radius)" />
+      <param name="publish_traversable" value="true" />
+      <param name="slice_level" value="1.0" />
+      <param name="publish_slices" value="true" />
+
+      <param name="local_frame_id" value="$(arg frame_id)" />
+      <param name="world_frame" value="$(arg frame_id)" />
+      <param name="replan_dt" value="0.25" />
+      <param name="command_publishing_dt" value="0.25" />
+      <param name="replan_lookahead_sec" value="1.0" />
+      <param name="mpc_prediction_horizon" value="300" />
+
+      <param name="robot_radius" value="$(arg robot_radius)" />
+      <param name="planning_horizon_m" value="20.0" />
+      <param name="autostart" value="true" />
+      <param name="verbose" value="true" />
+      <param name="v_max" value="2.0" />
+      <param name="a_max" value="2.0" />
+      <param name="avoid_collisions" value="true" />
+
+      <param name="use_shotgun" value="false"/>
+      <param name="plan_to_start" value="false"/>
+      <param name="verbose" value="false" />
+
+      <!-- What to do in case of failure. -->
+      <param name="goal_selector_strategy" value="local" />
     </node>
 
   </group>

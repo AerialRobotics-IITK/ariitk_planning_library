@@ -162,7 +162,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
 
   bool run_astar_esdf = false;
   bool run_astar_diagram = true;
-  bool run_astar_graph = true;
+  bool run_astar_graph = false;
   bool shorten_graph = true;
   bool exact_start_and_goal = true;
   bool smooth_path = true;
@@ -236,6 +236,8 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
             "short_astar_plan", 0.1));
       }
       shorten_timer.Stop();
+
+      last_waypoints_ = short_path;
     }
   }
 
