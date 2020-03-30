@@ -1,11 +1,13 @@
 Panels:
   - Class: rviz/Displays
-    Help Height: 78
+    Help Height: 90
     Name: Displays
     Property Tree Widget:
       Expanded:
         - /Global Options1
         - /VoxbloxMesh1
+        - /MarkerArray1
+        - /MarkerArray1/Status1
         - /PointCloud21
         - /MarkerArray3/Status1
       Splitter Ratio: 0.5
@@ -196,13 +198,13 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /firefly/mav_local_planner/local_path
       Name: MarkerArray
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -269,15 +271,15 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 24.716386795043945
+      Distance: 32.99225616455078
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -10.922051429748535
-        Y: 0.10424673557281494
+        X: -5.882628917694092
+        Y: -0.6184548139572144
         Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
@@ -292,7 +294,7 @@ Visualization Manager:
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1039
+  Height: 1061
   Hide Left Dock: false
   Hide Right Dock: false
   PlanningPanel:
@@ -306,6 +308,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1920
-  X: 0
-  Y: 20
+  Width: 1916
+  X: 2
+  Y: 2
