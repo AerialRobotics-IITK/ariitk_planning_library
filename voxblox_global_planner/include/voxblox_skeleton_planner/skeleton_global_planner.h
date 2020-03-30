@@ -1,5 +1,4 @@
-#ifndef VOXBLOX_SKELETON_PLANNER_SKELETON_GLOBAL_PLANNER_H_
-#define VOXBLOX_SKELETON_PLANNER_SKELETON_GLOBAL_PLANNER_H_
+#pragma once
 
 #include <ros/package.h>
 #include <ros/ros.h>
@@ -20,7 +19,7 @@
 #include <voxblox_skeleton/skeleton_planner.h>
 #include <voxblox_skeleton/sparse_graph_planner.h>
 
-#include "voxblox_skeleton_planner/skeleton_graph_planner.h"
+// #include "voxblox_skeleton_planner/skeleton_graph_planner.h"
 
 namespace mav_planning {
 
@@ -65,7 +64,6 @@ class SkeletonGlobalPlanner {
   // Settings for physical constriants.
   mav_planning::PhysicalConstraints constraints_;
 
-  std::string sparse_graph_path_;
   std::string frame_id_;
   bool visualize_;
   bool update_esdf_;
@@ -76,14 +74,10 @@ class SkeletonGlobalPlanner {
 
   // Planners of all sorts.
   voxblox::SkeletonAStar skeleton_planner_;
-  SkeletonGraphPlanner skeleton_graph_planner_;
   EsdfPathShortener path_shortener_;
-  LocoSmoother loco_smoother_;
 
   // Waypoints
   mav_msgs::EigenTrajectoryPointVector last_waypoints_;
 };
 
 }  // namespace mav_planning
-
-#endif  // VOXBLOX_SKELETON_PLANNER_SKELETON_GLOBAL_PLANNER_H_

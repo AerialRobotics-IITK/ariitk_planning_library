@@ -33,7 +33,6 @@
 		  	<arg name="model" value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
 		  	<arg name="enable_logging" value="$(arg enable_logging)" />
 			<arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-			<arg name="enable_cameras" default="false"/>
 		  	<arg name="log_file" value="$(arg log_file)"/>
 		</include>
 		<node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen"/>
@@ -54,9 +53,13 @@
 			<remap from="odometry" to="odometry_sensor1/odometry" />
 			<rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
 		</node>
-
 	</group>
+	
+	<include file="$(find voxblox_global_planner)/launch/voxblox.launch">
+		<arg name="mav_name" value="$(arg mav_name)"/>
+	</include>
 
+	<node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find simulator)/rviz/single_robot_planner.rviz" respawn="true"/>
 
 </launch>
 

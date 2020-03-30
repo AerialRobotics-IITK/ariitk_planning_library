@@ -11,7 +11,6 @@ add_definitions(-std=c++11)
 #############
 cs_add_library(${PROJECT_NAME}
   src/skeleton_global_planner.cpp
-  src/skeleton_graph_planner.cpp
 )
 
 ############
