@@ -6,7 +6,6 @@
 #include <string>
 
 #include <mav_msgs/conversions.h>
-#include <mav_path_smoothing/loco_smoother.h>
 #include <mav_planning_common/physical_constraints.h>
 #include <mav_planning_msgs/PlannerService.h>
 #include <mav_trajectory_generation/timing.h>
@@ -51,7 +50,6 @@ class SkeletonGlobalPlanner {
   ros::NodeHandle nh_private_;
 
   ros::Publisher path_marker_pub_;
-  ros::Publisher skeleton_pub_;
   ros::Publisher sparse_graph_pub_;
   ros::Publisher path_pub_;
   ros::Publisher waypoint_list_pub_;
@@ -64,7 +62,7 @@ class SkeletonGlobalPlanner {
 
   std::string frame_id_;
   bool visualize_;
-  bool update_esdf_;
+  bool verbose_;
   double voxel_size_;  // Cache the size of the voxels used by the map.
 
   voxblox::EsdfServer voxblox_server_;
