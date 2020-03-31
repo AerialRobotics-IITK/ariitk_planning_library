@@ -2,9 +2,9 @@
 #include <mav_planning_common/path_visualization.h>
 #include <mav_planning_common/utils.h>
 
-#include "voxblox_skeleton_planner/skeleton_global_planner.h"
+#include <voxblox_global_planner/skeleton_global_planner.hpp>
 
-namespace mav_planning {
+namespace ariitk::global_planner {
 
 SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
                                              const ros::NodeHandle& nh_private)
@@ -36,35 +36,31 @@ SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
   path_pub_srv_ = nh_private_.advertiseService(
       "publish_path", &SkeletonGlobalPlanner::publishPathCallback, this);
 
-  std::shared_ptr<voxblox::EsdfMap> esdf_map = voxblox_server_.getEsdfMapPtr();
-  CHECK(esdf_map);
-
   ROS_INFO(
       "Size: %f VPS: %zu",
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr()->voxel_size(),
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr()->voxels_per_side());
+  
+  CHECK(voxblox_server_.getEsdfMapPtr());
 
   voxblox_server_.setTraversabilityRadius(constraints_.robot_radius);
 
   // Now set up the skeleton generator.
+  ROS_INFO("Initializing skeleton generator.");
   skeletonize(voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
 
   // Set up the A* planners.
+  ROS_INFO("Initializing skeleton planner.");
   skeleton_planner_.setSkeletonLayer(skeleton_generator_.getSkeletonLayer());
   skeleton_planner_.setEsdfLayer(
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   skeleton_planner_.setMinEsdfDistance(constraints_.robot_radius);
 
   // Set up shortener.
+  ROS_INFO("Initializing path shortener.");
   path_shortener_.setEsdfLayer(
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   path_shortener_.setConstraints(constraints_);
-
-  if (visualize_) {
-    voxblox_server_.generateMesh();
-    voxblox_server_.publishSlices();
-    voxblox_server_.publishPointclouds();
-  }
 }
 
 void SkeletonGlobalPlanner::generateSparseGraph() {
@@ -77,17 +73,6 @@ void SkeletonGlobalPlanner::generateSparseGraph() {
   ROS_INFO("Generated skeleton graph.");
 
   if (visualize_) {
-    voxblox::Pointcloud pointcloud;
-    std::vector<float> distances;
-    skeleton_generator_.getSkeleton().getEdgePointcloudWithDistances(
-        &pointcloud, &distances);
-
-    // Publish the skeleton.
-    pcl::PointCloud<pcl::PointXYZI> ptcloud_pcl;
-    voxblox::pointcloudToPclXYZI(pointcloud, distances, &ptcloud_pcl);
-    ptcloud_pcl.header.frame_id = frame_id_;
-    skeleton_pub_.publish(ptcloud_pcl);
-
     // Now visualize the graph.
     const voxblox::SparseSkeletonGraph& graph =
         skeleton_generator_.getSparseGraph();
@@ -96,7 +81,7 @@ void SkeletonGlobalPlanner::generateSparseGraph() {
     sparse_graph_pub_.publish(marker_array);
   }
 
-  ROS_INFO_STREAM("Generation timings: " << std::endl
+  ROS_INFO_STREAM("[GP] Generation timings: " << std::endl
                                          << voxblox::timing::Timing::Print());
 }
 
@@ -124,22 +109,15 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
   voxblox::Point goal_point =
       goal_pose.position_W.cast<voxblox::FloatingPoint>();
   
-  skeleton_generator_.generateSkeleton();
-  skeleton_generator_.generateSparseGraph();
+  // skeleton_generator_.generateSkeleton();
+  generateSparseGraph();
   ROS_INFO("Finished generating sparse graph.");
 
   ROS_INFO_STREAM("Total Timings: " << std::endl
                                   << voxblox::timing::Timing::Print());
 
-  // Now visualize the graph.
-  const auto &graph = skeleton_generator_.getSparseGraph();
   visualization_msgs::MarkerArray marker_array;
-  visualizeSkeletonGraph(graph, frame_id_, &marker_array);
-  sparse_graph_pub_.publish(marker_array);
-  marker_array.markers.clear();
-
   bool shorten_graph = true;
-  bool smooth_path = true;
 
   voxblox::AlignedVector<voxblox::Point> diagram_coordinate_path;
   mav_trajectory_generation::timing::Timer astar_diag_timer(
@@ -153,12 +131,12 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     point.position_W = voxblox_point.cast<double>();
     diagram_path.push_back(point);
   }
-  double path_length = computePathLength(diagram_path);
+  double path_length = mav_planning::computePathLength(diagram_path);
   int num_vertices = diagram_path.size();
   astar_diag_timer.Stop();
 
   if (visualize_) {
-    marker_array.markers.push_back(createMarkerForPath(
+    marker_array.markers.push_back(mav_planning::createMarkerForPath(
         diagram_path, frame_id_, mav_visualization::Color::Purple(),
         "astar_diag", 0.1));
   }
@@ -170,12 +148,12 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
         "plan/astar_diag/shorten");
     mav_msgs::EigenTrajectoryPointVector short_path;
     path_shortener_.shortenPath(diagram_path, &short_path);
-    path_length = computePathLength(short_path);
+    path_length = mav_planning::computePathLength(short_path);
     num_vertices = short_path.size();
     ROS_INFO("Diagram Shorten Success? %d Path length: %f Vertices: %d",
               success, path_length, num_vertices);
     if (visualize_) {
-      marker_array.markers.push_back(createMarkerForPath(
+      marker_array.markers.push_back(mav_planning::createMarkerForPath(
           short_path, frame_id_, mav_visualization::Color::Pink(),
           "short_astar_plan", 0.1));
     }
@@ -224,13 +202,14 @@ bool SkeletonGlobalPlanner::publishPathCallback(
 }
 
 void SkeletonGlobalPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf_layer) {
-  if (update_esdf_ ||
-      voxblox_server_.getEsdfMapPtr()
-              ->getEsdfLayerPtr()
-              ->getNumberOfAllocatedBlocks() == 0) {
-    const bool full_euclidean_distance = true;
-    voxblox_server_.updateEsdfBatch(full_euclidean_distance);
-  }
+  // if (update_esdf_ ||
+  //     voxblox_server_.getEsdfMapPtr()
+  //             ->getEsdfLayerPtr()
+  //             ->getNumberOfAllocatedBlocks() == 0) {
+  //   const bool full_euclidean_distance = true;
+  //   // voxblox_server_.generateMesh();
+  //   voxblox_server_.updateEsdfBatch(full_euclidean_distance);
+  // }
   skeleton_generator_.setEsdfLayer(esdf_layer);
 
   voxblox::FloatingPoint min_separation_angle =
@@ -250,6 +229,9 @@ void SkeletonGlobalPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf
   skeleton_generator_.setNumNeighborsForEdge(num_neighbors_for_edge);
 
   skeleton_generator_.setMinGvdDistance(constraints_.robot_radius);
+
+  // skeleton_generator_.generateSkeleton();
+  // skeleton_generator_.generateSparseGraph();
 }
 
 }  // namespace mav_planning

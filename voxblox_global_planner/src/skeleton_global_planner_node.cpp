@@ -1,4 +1,4 @@
-#include "voxblox_skeleton_planner/skeleton_global_planner.h"
+#include <voxblox_global_planner/skeleton_global_planner.hpp>
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "skeleton_global_planner");
@@ -10,9 +10,8 @@ int main(int argc, char** argv) {
 
   FLAGS_alsologtostderr = true;
 
-  mav_planning::SkeletonGlobalPlanner planner_node(nh, nh_private);
+  ariitk::global_planner::SkeletonGlobalPlanner planner_node(nh, nh_private);
   ROS_INFO("Initialized skeleton global planner node.");
-  planner_node.generateSparseGraph();
 
   ros::spin();
   return 0;
