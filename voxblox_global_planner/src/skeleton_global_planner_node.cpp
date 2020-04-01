@@ -13,6 +13,12 @@ int main(int argc, char** argv) {
   ariitk::global_planner::SkeletonGlobalPlanner planner_node(nh, nh_private);
   ROS_INFO("Initialized skeleton global planner node.");
 
-  ros::spin();
+  ros::Rate loop_rate(10);
+  
+  while(ros::ok()) {
+    ros::spinOnce();
+    loop_rate.sleep();
+  }
+
   return 0;
 }

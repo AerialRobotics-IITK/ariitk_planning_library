@@ -6,7 +6,8 @@
 	<arg name="log_file" 				default="$(arg mav_name)" />
 
 	<!-- world path -->
-	<arg name="world_path" default="$(find rotors_gazebo)/worlds/warehouse.world"/>
+	<arg name="world_path" default="$(find simulator)/worlds/maze_house.world"/>
+	<!-- <arg name="world_path" default="$(find rotors_gazebo)/worlds/warehouse.world"/> -->
     
 	<!-- Gazebo configs -->
 	<arg name="gui" 	default="false"/>
