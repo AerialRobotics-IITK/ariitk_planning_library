@@ -34,8 +34,8 @@ class FrontierEvaluator {
 
         double voxel_size_;
         double block_size_;
-        double max_weight_;
         double checking_dist_;
+        double surface_distance_threshold_factor_;
 
         std::vector<Eigen::Vector3d> neighbor_voxels_;
 

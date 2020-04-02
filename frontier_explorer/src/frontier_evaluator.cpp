@@ -8,6 +8,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("checking_distance", checking_dist_);
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("frame_id", frame_id_);
+    nh_private.getParam("surface_distance_threshold_factor", surface_distance_threshold_factor_);
 
     CHECK(esdf_server_.getEsdfMapPtr());
 
@@ -16,13 +17,11 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
 
     voxel_size_ = esdf_server_.getEsdfMapPtr()->voxel_size();
     block_size_ = esdf_server_.getEsdfMapPtr()->block_size();
-    max_weight_ = voxblox::getTsdfIntegratorConfigFromRosParam(nh_private).max_weight;
 
     frontier_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("frontiers", 1);
     voxel_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("voxel_states", 1);
 
     auto vs = voxel_size_ * checking_dist_;
-    ROS_INFO("%f", vs);
     if(!accurate_frontiers_) {
         neighbor_voxels_.reserve(6);
         neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
@@ -73,15 +72,15 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
 }
 
 unsigned char FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
-    double distance = 0.0;
-    if(!esdf_server_.getEsdfMapPtr()->isObserved(point)) {
-        return VoxelState::UNKNOWN;
-    } else if(getVoxelDistance(point, distance)){
-        if(distance <= voxel_size_) {
+    double distance = 0.0, weight = 0.0;
+    if(getVoxelDistance(point, distance) && getVoxelWeight(point, weight)) {
+        if(std::abs(distance) < voxel_size_ * surface_distance_threshold_factor_ && weight > 1e-3) {
             return VoxelState::OCCUPIED;
-        } else {
+        } else if(distance >= voxel_size_) {
             return VoxelState::FREE;
-        } 
+        } else {
+            return VoxelState::UNKNOWN;
+        }
     } else {
         return VoxelState::UNKNOWN;
     }
@@ -130,7 +129,7 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     marker.action = visualization_msgs::Marker::ADD;
     marker.color.r = 1.0;
     marker.color.g = 1.0;
-    marker.color.b = 0.0;
+    marker.color.b = 1.0;
     marker.color.a = 1.0;
 
     voxblox::BlockIndexList blocks;
