@@ -56,7 +56,7 @@
 		</node>
 	</group>
 	
-	<include file="$(find voxblox_global_planner)/launch/voxblox.launch">
+	<include file="$(find simulator)/launch/voxblox_server.launch">
 		<arg name="mav_name" value="$(arg mav_name)"/>
 	</include>
 
