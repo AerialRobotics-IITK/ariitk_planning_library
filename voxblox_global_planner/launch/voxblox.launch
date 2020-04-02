@@ -15,7 +15,7 @@
             <param name="publish_esdf_map" value="true" />
             <param name="update_mesh_every_n_sec" value="0.25" />
             <param name="update_esdf_every_n_sec" value="0.25" />
-            <param name="publish_map_every_n_sec" value="0.25" />
+            <param name="publish_map_every_n_sec" value="0.1" />
       
             <param name="method" value="fast" />
             <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
