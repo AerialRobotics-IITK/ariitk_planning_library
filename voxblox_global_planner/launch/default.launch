@@ -21,18 +21,13 @@
       <remap from="voxblox_global_planner/tsdf_map_in" to="tsdf_map" />
     </node>
 
-    <node name="frontier_evaluator" pkg="voxblox_global_planner" type="frontier_evaluator_node" output="screen" clear_params="true" respawn="true">
-      <param name="visualize"          value="true" />
-      <param name="frame_id"           value="$(arg frame_id)" />
-      <param name="accurate_frontiers" value="true" />
-      <param name="checking_distance"  value="1.0"/> 
-      <param name="robot_radius"       value="0.4" />
-      <param name="verbose"            value="false" />
-     
-      <remap from="frontier_evaluator/esdf_map_in" to="esdf_map" />
-      <remap from="frontier_evaluator/tsdf_map_in" to="tsdf_map" />
-    </node>
   </group>
+
+  <include file="$(find vfrontier_explorer)/launch/default.launch">
+    <arg name="mav_name"      value="$(arg mav_name)"/>
+    <arg name="robot_radius"  value="$(arg robot_radius)"/>
+    <arg name="frame_id"      value="$(arg frame_id)"/>
+  </include>
 
   <include file="$(find voxblox_global_planner)/launch/local_planner.launch">
     <arg name="mav_name"      value="$(arg mav_name)"/>

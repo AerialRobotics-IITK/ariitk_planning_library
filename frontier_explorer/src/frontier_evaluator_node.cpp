@@ -1,4 +1,4 @@
-#include <voxblox_global_planner/frontier_evaluator/frontier_evaluator.hpp>
+#include <frontier_explorer/frontier_evaluator.hpp>
 
 using namespace ariitk::global_planner;
 

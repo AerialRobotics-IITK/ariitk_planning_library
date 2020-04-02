@@ -1,4 +1,4 @@
-#include <voxblox_global_planner/frontier_evaluator/frontier_evaluator.hpp>
+#include <frontier_explorer/frontier_evaluator.hpp>
 
 namespace ariitk::global_planner {
 
@@ -60,7 +60,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, -vs));
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, -vs));
     }
-    ROS_INFO("%d", neighbor_voxels_.size());
 }
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
