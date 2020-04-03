@@ -9,7 +9,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("frame_id", frame_id_);
     nh_private.getParam("surface_distance_threshold_factor", surface_distance_threshold_factor_);
-
+    nh_private.getParam("height_thresh", height_thresh_);
     CHECK(esdf_server_.getEsdfMapPtr());
 
     constraints_.setParametersFromRos(nh_private);
@@ -66,7 +66,9 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     VoxelState voxel_state;
     for(auto& neighbour : neighbor_voxels_) {
         voxel_state = getVoxelState(voxel + neighbour);
-        if(voxel_state == VoxelState::UNKNOWN) { return true; }
+        if(voxel_state == VoxelState::UNKNOWN && voxel(2,0) < height_thresh_) { 
+            return true; 
+        }
     }
     return false;
 }
