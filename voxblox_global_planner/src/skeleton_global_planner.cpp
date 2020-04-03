@@ -98,8 +98,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
                                       << voxblox::timing::Timing::Print());
   }
 
-    if (getMapDistance(goal_pose.position_W) < constraints_.robot_radius)
-    {
+    if (getMapDistance(goal_pose.position_W) < constraints_.robot_radius) {
       ROS_ERROR("Goal pose occupied!");
       return false;
     }
@@ -118,8 +117,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     bool success = skeleton_planner_.getPathUsingEsdfAndDiagram(
         start_point, goal_point, &diagram_coordinate_path);
     mav_msgs::EigenTrajectoryPointVector diagram_path;
-    for (const voxblox::Point &voxblox_point : diagram_coordinate_path)
-    {
+    for (const voxblox::Point &voxblox_point : diagram_coordinate_path) {
       mav_msgs::EigenTrajectoryPoint point;
       point.position_W = voxblox_point.cast<double>();
       diagram_path.push_back(point);
@@ -128,8 +126,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     int num_vertices = diagram_path.size();
     astar_diag_timer.Stop();
 
-    if (visualize_)
-    {
+    if (visualize_) {
       marker_array.markers.push_back(mav_planning::createMarkerForPath(
           diagram_path, frame_id_, mav_visualization::Color::Purple(),
           "astar_diag", 0.1));
@@ -137,14 +134,12 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     ROS_INFO("Diag A* Success? %d Path length: %f Vertices: %d", success,
              path_length, num_vertices);
     
-    if (success && getMapDistance(start_pose.position_W) < constraints_.robot_radius)
-    {
+    if (success && getMapDistance(start_pose.position_W) < constraints_.robot_radius) {
       ROS_ERROR("Start pose occupied!");
       return false;
     }
 
-    if (shorten_graph)
-    {
+    if (shorten_graph) {
       mav_trajectory_generation::timing::Timer shorten_timer(
           "plan/astar_diag/shorten");
       mav_msgs::EigenTrajectoryPointVector short_path;
@@ -164,12 +159,10 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
       last_waypoints_ = short_path;
     }
 
-    if (visualize_)
-    {
+    if (visualize_) {
       path_marker_pub_.publish(marker_array);
     }
-    if (verbose_)
-    {
+    if (verbose_) {
       ROS_INFO_STREAM("All timings: "
                     << std::endl
                     << mav_trajectory_generation::timing::Timing::Print());

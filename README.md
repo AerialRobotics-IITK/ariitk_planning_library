@@ -11,4 +11,4 @@ Very heavily based off the following repositories:
 
 [ethz-asl/mav_voxblox_planning](https://www.github.com/ethz-asl/mav_voxblox_planning): MAV planning tools using voxblox as the map representation.
 
-[ethz-asl/mav_active_3d_planning](https://www.github.com/ethz-asl/mav_active_3d_planning): A modular framework for online informative path planner (IPP) design. 
+[ethz-asl/mav_active_3d_planning](https://www.github.com/ethz-asl/mav_active_3d_planning): A modular framework for online informative path planner (IPP) design.
