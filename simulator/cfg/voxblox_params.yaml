@@ -1,0 +1,32 @@
+# Voxblox Server Parameters
+
+verbose: false
+world_frame: world
+
+publish_tsdf_map: true
+publish_esdf_map: true
+publish_pointclouds: true
+publish_slices: true
+publish_traversable: true
+
+update_mesh_every_n_sec: 0.25
+update_esdf_every_n_sec: 0.25
+publish_map_every_n_sec: 0.25
+
+method: fast
+tsdf_voxel_size: 0.2
+tsdf_voxels_per_side: 16
+esdf_max_distance_m: 2.0
+max_ray_length_m: 10.0
+voxel_carving_enabled: true
+color_mode: height
+
+use_tf_transforms: true
+min_time_between_msgs_sec: 0.1
+clear_sphere_for_planning: true
+occupied_sphere_radius: 4.0
+clear_sphere_radius: 0.1
+slice_level: 1.0
+
+esdf_add_occupied_crust: true
+esdf_min_diff_m: 0.0

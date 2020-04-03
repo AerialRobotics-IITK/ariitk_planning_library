@@ -1,0 +1,59 @@
+# General Purpose Parameters
+
+verbose: false
+visualize: true
+
+world_frame: world
+frame_id: world
+local_frame_id: world
+
+robot_radius: 0.45
+traversability_radius: 0.45
+
+# esdf server params
+publish_tsdf_map: false
+publish_esdf_map: false
+publish_pointclouds: false
+publish_slices: false
+publish_traversable: false
+
+update_mesh_every_n_sec: 0.25
+update_esdf_every_n_sec: 0.25
+publish_map_every_n_sec: 0.25
+
+# tsdf integrator params
+method: fast
+tsdf_voxel_size: 0.2
+tsdf_voxels_per_side: 16
+esdf_max_distance_m: 2.0
+max_ray_length_m: 10.0
+voxel_carving_enabled: true
+color_mode: height
+
+# esdf integrator params
+use_tf_transforms: true
+min_time_between_msgs_sec: 0.1
+clear_sphere_for_planning: true
+occupied_sphere_radius: 4.0
+clear_sphere_radius: 0.1
+slice_level: 1.0
+esdf_add_occupied_crust: true
+esdf_min_diff_m: 0.0
+
+# global planner params
+generate_by_layer_neighbors: true
+min_separation_angle: 0.78
+
+# local planner params
+replan_dt: 0.1
+command_publishing_dt: 0.25
+replan_lookahead_sec: 1.0
+mpc_prediction_horizon: 30
+planning_horizon_m: 20.0
+v_max: 2.0
+a_max: 2.0
+autostart: true
+use_shotgun: false
+plan_to_start: true
+avoid_collisions: true
+goal_selector_strategy: local
