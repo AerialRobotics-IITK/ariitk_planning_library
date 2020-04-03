@@ -8,7 +8,6 @@
       <remap from="voxblox_global_planner/tsdf_map_in" to="tsdf_map" />
       <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load"/>
     </node>
-
   </group>
 
   <include file="$(find frontier_explorer)/launch/default.launch">

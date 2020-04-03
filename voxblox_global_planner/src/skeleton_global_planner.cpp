@@ -8,13 +8,13 @@ namespace ariitk::global_planner {
 
 SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
                                              const ros::NodeHandle& nh_private)
-    : nh_(nh),
-      nh_private_(nh_private),
-      frame_id_("map"),
-      visualize_(true),
-      verbose_(false),
-      voxblox_server_(nh_, nh_private_),
-      skeleton_generator_() {
+  : nh_(nh),
+    nh_private_(nh_private),
+    frame_id_("map"),
+    visualize_(true),
+    verbose_(false),
+    voxblox_server_(nh_, nh_private_),
+    skeleton_generator_() {
   constraints_.setParametersFromRos(nh_private_);
 
   nh_private_.param("visualize", visualize_, visualize_);
