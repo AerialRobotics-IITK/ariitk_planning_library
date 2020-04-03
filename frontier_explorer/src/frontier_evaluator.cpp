@@ -1,4 +1,4 @@
-#include <voxblox_global_planner/frontier_evaluator/frontier_evaluator.hpp>
+#include <frontier_explorer/frontier_evaluator.hpp>
 
 namespace ariitk::global_planner {
 
@@ -22,7 +22,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     voxel_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("voxel_states", 1);
 
     auto vs = voxel_size_ * checking_dist_;
-    ROS_INFO("%f", vs);
     if(!accurate_frontiers_) {
         neighbor_voxels_.reserve(6);
         neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
@@ -60,7 +59,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, -vs));
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, -vs));
     }
-    ROS_INFO("%d", neighbor_voxels_.size());
 }
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
@@ -75,7 +73,7 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
 
 unsigned char FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
     double distance = 0.0, weight = 0.0;
-    if(getVoxelDistance(point, distance) && getVoxelWeight(point, weight)){
+    if(getVoxelDistance(point, distance) && getVoxelWeight(point, weight)) {
         if(std::abs(distance) < voxel_size_ * surface_distance_threshold_factor_ && weight > 1e-3) {
             return VoxelState::OCCUPIED;
         } else if(distance >= voxel_size_) {
@@ -131,7 +129,7 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     marker.action = visualization_msgs::Marker::ADD;
     marker.color.r = 1.0;
     marker.color.g = 1.0;
-    marker.color.b = 0.0;
+    marker.color.b = 1.0;
     marker.color.a = 1.0;
 
     voxblox::BlockIndexList blocks;

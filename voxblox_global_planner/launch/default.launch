@@ -1,44 +1,23 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="mav_name"      default="firefly"/>
-  <arg name="frame_id"      default="world" />
-  <arg name="robot_radius"  default="0.45"/>
 
   <group ns="$(arg mav_name)">
     <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true" respawn="true">
-      <param name="visualize"    value="true" />
-      <param name="robot_radius" value="$(arg robot_radius)" />
-      <param name="frame_id"     value="$(arg frame_id)" />
-      <param name="world_frame"  value="$(arg frame_id)" />
-      <param name="verbose"      value="false" />
-
-      <param name="generate_by_layer_neighbors" value="true" />
-      <!--    If using full euclidean: 0.78 (45 degrees)     -->
-      <!--    If using quasi-Euclidean: 1.57 (90 degrees)   -->
-      <param name="min_separation_angle"        value="0.78" />
-     
       <remap from="voxblox_global_planner/esdf_map_in" to="esdf_map" />
       <remap from="voxblox_global_planner/tsdf_map_in" to="tsdf_map" />
+     
+      <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load"/>
     </node>
 
-    <node name="frontier_evaluator" pkg="voxblox_global_planner" type="frontier_evaluator_node" output="screen" clear_params="true" respawn="true">
-      <param name="visualize"          value="true" />
-      <param name="frame_id"           value="$(arg frame_id)" />
-      <param name="accurate_frontiers" value="false" />
-      <param name="checking_distance"  value="1.0"/> 
-      <param name="robot_radius"       value="0.4" />
-      <param name="verbose"            value="false" />
-      <param name="surface_distance_threshold_factor" value="2.0"/>
-     
-      <remap from="frontier_evaluator/esdf_map_in" to="esdf_map" />
-      <remap from="frontier_evaluator/tsdf_map_in" to="tsdf_map" />
-    </node>
   </group>
+
+  <include file="$(find frontier_explorer)/launch/default.launch">
+    <arg name="mav_name"      value="$(arg mav_name)"/>
+  </include>
 
   <include file="$(find voxblox_global_planner)/launch/local_planner.launch">
     <arg name="mav_name"      value="$(arg mav_name)"/>
-    <arg name="robot_radius"  value="$(arg robot_radius)"/>
-    <arg name="frame_id"      value="$(arg frame_id)"/>
   </include>
 
 </launch>

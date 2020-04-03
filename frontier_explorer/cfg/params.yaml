@@ -1,0 +1,5 @@
+# Frontier Exploration Parameters
+
+accurate_frontiers: true
+checking_distance: 1.0
+surface_distance_threshold_factor: 2.0

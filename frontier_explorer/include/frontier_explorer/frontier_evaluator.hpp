@@ -9,7 +9,7 @@
 
 namespace ariitk::global_planner {
 
-enum VoxelState{OCCUPIED, FREE, UNKNOWN, UNUSED};
+enum VoxelState{OCCUPIED, FREE, UNKNOWN};
 
 class FrontierEvaluator {
     public:
