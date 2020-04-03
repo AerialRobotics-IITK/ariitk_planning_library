@@ -7,9 +7,9 @@
 #include <mav_planning_common/physical_constraints.h>
 #include <Eigen/Core>
 
-namespace ariitk::global_planner {
+namespace ariitk::frontier_explorer {
 
-enum VoxelState{OCCUPIED, FREE, UNKNOWN};
+enum class VoxelState{OCCUPIED, FREE, UNKNOWN};
 
 class FrontierEvaluator {
     public:
@@ -21,7 +21,7 @@ class FrontierEvaluator {
         void createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers);
         void visualizeVoxelStates();
 
-        unsigned char getVoxelState(const Eigen::Vector3d& point);
+        VoxelState getVoxelState(const Eigen::Vector3d& point);
         bool getVoxelDistance(const Eigen::Vector3d& point, double& distance);
         bool getVoxelWeight(const Eigen::Vector3d& point, double& weight);
 
@@ -48,4 +48,4 @@ class FrontierEvaluator {
         ros::Publisher voxel_pub_;
 };
 
-} // namespace ariitk::global_planner
+} // namespace ariitk::frontier_explorer

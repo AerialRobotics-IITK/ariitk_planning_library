@@ -1,6 +1,6 @@
 #include <frontier_explorer/frontier_evaluator.hpp>
 
-namespace ariitk::global_planner {
+namespace ariitk::frontier_explorer {
 
 FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     :  esdf_server_(nh, nh_private) {
@@ -63,7 +63,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     if(getVoxelState(voxel) != VoxelState::FREE) { return false; }
-    unsigned char voxel_state;
+    VoxelState voxel_state;
     for(auto& neighbour : neighbor_voxels_) {
         voxel_state = getVoxelState(voxel + neighbour);
         if(voxel_state == VoxelState::UNKNOWN) { return true; }
@@ -71,7 +71,7 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     return false;
 }
 
-unsigned char FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
+VoxelState FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
     double distance = 0.0, weight = 0.0;
     if(getVoxelDistance(point, distance) && getVoxelWeight(point, weight)) {
         if(std::abs(distance) < voxel_size_ * surface_distance_threshold_factor_ && weight > 1e-3) {
@@ -236,4 +236,4 @@ void FrontierEvaluator::visualizeVoxelStates() {
     voxel_pub_.publish(voxel_marker);
 }
 
-} // namespace ariitk::global_planner
+} // namespace ariitk::frontier_explorer

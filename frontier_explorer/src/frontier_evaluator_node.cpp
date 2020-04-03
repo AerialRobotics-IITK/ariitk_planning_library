@@ -1,6 +1,6 @@
 #include <frontier_explorer/frontier_evaluator.hpp>
 
-using namespace ariitk::global_planner;
+using namespace ariitk::frontier_explorer;
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "frontier_evaluator");
