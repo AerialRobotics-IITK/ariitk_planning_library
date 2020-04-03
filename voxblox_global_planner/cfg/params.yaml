@@ -2,7 +2,7 @@
 
 # debug flags
 verbose: false                      # Print additional debug and timing information.
-visualize: false                     # Whether to publish information for visualization in RViz.
+visualize: true                     # Whether to publish information for visualization in RViz.
 
 # frames
 world_frame: world                  # The base frame used when looking up tf transforms. 
