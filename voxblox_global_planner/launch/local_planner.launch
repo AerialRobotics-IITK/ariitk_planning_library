@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="mav_name" default="firefly"/>
+
+    <group ns="$(arg mav_name)">
+        <node name="mav_local_planner" pkg="mav_local_planner" type="mav_local_planner_node" args="-alsologtostderr" output="screen" clear_params="true">
+            <remap from="odometry"                      to="ground_truth/odometry" />
+            <remap from="mav_local_planner/esdf_map_in" to="esdf_map" />
+            <remap from="mav_local_planner/tsdf_map_in" to="tsdf_map" />
+      
+            <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
+          </node>      
+    </group>
+
+</launch>

@@ -6,13 +6,11 @@
 
   <maintainer email="dvyanshu@iitk.ac.in">Divyanshu Gangwar</maintainer>
 
-  <license>TODO</license>
+  <license>BSD</license>
 
   <author email="dvyanshu@iitk.ac.in">Divyanshu Gangwar</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
-  
-  <depend>roscpp</depend>
   
 </package>

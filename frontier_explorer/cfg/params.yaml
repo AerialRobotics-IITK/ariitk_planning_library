@@ -1,0 +1,8 @@
+# Frontier Exploration Parameters
+
+accurate_frontiers: true                  # True: explicitely compute all frontier voxels
+                                          # (may degrade performance),
+                                          # False: estimate frontier voxels by checking only some neighbors (detection
+                                          # depends on previous views)
+checking_distance: 1.0                    # Distance in voxelsizes where we check for known voxels
+surface_distance_threshold_factor: 2.0    # Distance in voxelsizes upto which voxels near the surface are marked as occupied
