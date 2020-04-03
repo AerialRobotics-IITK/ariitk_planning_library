@@ -22,8 +22,6 @@ namespace ariitk::global_planner {
 
 class SkeletonGlobalPlanner {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   SkeletonGlobalPlanner(const ros::NodeHandle& nh,
                         const ros::NodeHandle& nh_private);
   virtual ~SkeletonGlobalPlanner() {}
@@ -39,7 +37,7 @@ class SkeletonGlobalPlanner {
 
   void convertCoordinatePathToPath(
       const voxblox::AlignedVector<voxblox::Point>& coordinate_path,
-      mav_msgs::EigenTrajectoryPointVector& path) ;
+      mav_msgs::EigenTrajectoryPointVector& path);
 
   double getMapDistance(const Eigen::Vector3d& position) const;
 

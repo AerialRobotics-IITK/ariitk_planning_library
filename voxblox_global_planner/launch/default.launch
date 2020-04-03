@@ -6,7 +6,6 @@
     <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true" respawn="true">
       <remap from="voxblox_global_planner/esdf_map_in" to="esdf_map" />
       <remap from="voxblox_global_planner/tsdf_map_in" to="tsdf_map" />
-     
       <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load"/>
     </node>
 

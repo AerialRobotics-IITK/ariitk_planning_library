@@ -20,34 +20,34 @@
 	<env name="GAZEBO_RESOURCE_PATH" 	value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
 
 	<include file="$(find gazebo_ros)/launch/empty_world.launch">
-		<arg name="world_name" value="$(arg world_path)" />
-		<arg name="debug" value="$(arg debug)"/> 
-    <arg name="paused" value="$(arg paused)"/>
-		<arg name="gui" value="$(arg gui)"/>
-		<arg name="verbose" value="$(arg verbose)"/>
+		<arg name="world_name" 	value="$(arg world_path)" />
+		<arg name="debug" 		value="$(arg debug)"/> 
+    	<arg name="paused" 		value="$(arg paused)"/>
+		<arg name="gui" 		value="$(arg gui)"/>
+		<arg name="verbose"		value="$(arg verbose)"/>
 	</include>
 
 	<group ns="$(arg mav_name)">
-		<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
-			<arg name="mav_name" value="$(arg mav_name)" />
-		  <arg name="model" value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
-		  <arg name="enable_logging" value="$(arg enable_logging)" />
+		<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">	
+			<arg name="mav_name" 			value="$(arg mav_name)" />
+			<arg name="model" 				value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
+			<arg name="enable_logging" 		value="$(arg enable_logging)" />
 			<arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-		  <arg name="log_file" value="$(arg log_file)"/>
+			<arg name="log_file" 			value="$(arg log_file)"/>
 		</include>
 
-		<node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen"/>
-		<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
-		<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
-		<node pkg="tf" type="static_transform_publisher" name="world_odom_broadcaster" args="0 0 0 0 0 0 1 world odom 100" />
+		<node name="hovering_example" 		pkg="rotors_gazebo" 		type="hovering_example" 	output="screen"/>
+		<node name="robot_state_publisher" 	pkg="robot_state_publisher" type="robot_state_publisher" />
+		<node name="joint_state_publisher" 	pkg="joint_state_publisher" type="joint_state_publisher" />
+		<node name="world_odom_broadcaster" pkg="tf" 					type="static_transform_publisher"  args="0 0 0 0 0 0 1 world odom 100" />
 
-		<node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true" output="screen">
-			<remap from="odometry" to="ground_truth/odometry" />
+		<node name="mav_nonlinear_mpc" 		pkg="mav_nonlinear_mpc" 	type="nonlinear_mpc_node" 	output="screen"	respawn="true" clear_params="true" >
+			<remap from="odometry" 			to="ground_truth/odometry" />
 			<rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
 			<rosparam file="$(find mav_disturbance_observer)/resources/disturbance_observer_$(arg mav_name).yaml"/>
-			<param name="use_rc_teleop" value="false"/>
-			<param name="verbose" value="false" />
-			<param name="reference_frame" value="world"/>
+			<param name="use_rc_teleop" 	value="false"/>
+			<param name="verbose" 			value="false" />
+			<param name="reference_frame" 	value="world"/>
 		</node>
 
 		<node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true" output="screen">
@@ -60,6 +60,6 @@
 		<arg name="mav_name" value="$(arg mav_name)"/>
 	</include>
 
-	<node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find simulator)/rviz/single_robot_planner.rviz" respawn="true"/>
+	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find simulator)/rviz/single_robot_planner.rviz" respawn="true"/>
 
 </launch>
