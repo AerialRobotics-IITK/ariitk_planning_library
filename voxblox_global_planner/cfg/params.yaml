@@ -22,7 +22,7 @@ publish_pointclouds: false          # If true the tsdf and esdf (if generated) i
 publish_slices: false               # Whether to publish TSDF and ESDF pointcloud slices at the height specified by $slice_level
 publish_traversable: false          # Whether to display a traversability pointcloud from the ESDF server.
 
-update_mesh_every_n_sec: 0.0       # Rate at which the mesh topic will be published to, a value of 0 disables. 
+update_mesh_every_n_sec: 0.0        # Rate at which the mesh topic will be published to, a value of 0 disables. 
                                     # This will not trigger any other mesh operations, such as generating a ply file.
 update_esdf_every_n_sec: 0.25       # How often the ESDF map should be updated
 publish_map_every_n_sec: 0.25       # Rate at which the TSDF and ESDF maps are published, if they are published.

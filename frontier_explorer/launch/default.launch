@@ -4,7 +4,6 @@
 
   <group ns="$(arg mav_name)">
     <node name="frontier_evaluator" pkg="frontier_explorer" type="frontier_evaluator_node" output="screen" clear_params="true" respawn="true">
-        <!-- <remap from="frontier_evaluator/esdf_map_in" to="esdf_map" /> -->
         <remap from="frontier_evaluator/tsdf_map_in" to="tsdf_map" />
 
         <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />

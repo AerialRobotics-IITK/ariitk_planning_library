@@ -12,7 +12,6 @@ include_directories(${Eigen3_INCLUDE_DIRS})
 #############
 # LIBRARIES #
 #############
-
 cs_add_library(${PROJECT_NAME}
   src/frontier_evaluator.cpp
 )
@@ -21,7 +20,6 @@ target_link_libraries(${PROJECT_NAME} ${Eigen3_LIBRARIES})
 ############
 # BINARIES #
 ############
-
 cs_add_executable(frontier_evaluator_node
   src/frontier_evaluator_node.cpp
 )
