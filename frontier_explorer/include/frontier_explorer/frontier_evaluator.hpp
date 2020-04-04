@@ -7,6 +7,8 @@
 #include <mav_planning_common/physical_constraints.h>
 #include <Eigen/Core>
 
+#include <ariitk_planning_msgs/Frontiers.h>
+
 namespace ariitk::frontier_explorer {
 
 enum class VoxelState{OCCUPIED, FREE, UNKNOWN};
@@ -14,36 +16,45 @@ enum class VoxelState{OCCUPIED, FREE, UNKNOWN};
 class FrontierEvaluator {
     public:
         FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
-    
-        void createMarkerFromFrontiers(visualization_msgs::MarkerArray* markers);
-        void visualizeFrontiers();
-
-        void createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers);
-        void visualizeVoxelStates();
+        void run();
+        void findFrontiers();
 
         VoxelState getVoxelState(const Eigen::Vector3d& point);
         bool getVoxelDistance(const Eigen::Vector3d& point, double& distance);
         bool getVoxelWeight(const Eigen::Vector3d& point, double& weight);
+        ariitk_planning_msgs::Frontiers getFrontiers() const { return frontiers_msg_; };
+        
+        void createMarkerFromFrontiers(visualization_msgs::MarkerArray *markers);
+        void createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers);
+        void visualizeVoxelStates();
 
     protected:
+        struct Frontier{
+            std::vector<Eigen::Vector3d> points;
+            Eigen::Vector3d center;
+        };
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
-        
-        mav_planning::PhysicalConstraints constraints_; 
-        
+        void clusterFrontiers(const Eigen::Vector3d &point);
+
+        std::vector<Frontier> frontiers_;
+        std::vector<Eigen::Vector3d> neighbor_voxels_;
+
+        mav_planning::PhysicalConstraints constraints_;
+
         voxblox::EsdfServer esdf_server_;
 
         double voxel_size_;
         double block_size_;
         double checking_dist_;
         double surface_distance_threshold_factor_;
-        double height_thresh_;
-
-        std::vector<Eigen::Vector3d> neighbor_voxels_;
+        double frontier_size_factor_;
 
         bool accurate_frontiers_;
         bool visualize_;    
 
         std::string frame_id_;
+        
+        ariitk_planning_msgs::Frontiers frontiers_msg_;
 
         ros::Publisher frontier_pub_;
         ros::Publisher voxel_pub_;
