@@ -36,7 +36,8 @@ class FrontierEvaluator {
         double block_size_;
         double checking_dist_;
         double surface_distance_threshold_factor_;
-        double height_thresh_;
+        double slice_level_;
+        double height_range_;
 
         std::vector<Eigen::Vector3d> neighbor_voxels_;
 
