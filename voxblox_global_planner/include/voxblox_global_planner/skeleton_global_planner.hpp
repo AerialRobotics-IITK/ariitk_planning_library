@@ -40,8 +40,11 @@ class SkeletonGlobalPlanner {
       mav_msgs::EigenTrajectoryPointVector& path);
 
   double getMapDistance(const Eigen::Vector3d& position) const;
+  double getMapDistanceAndGradient(const Eigen::Vector3d& position, Eigen::Vector3d& gradient) const;
 
   void skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf_layer);
+
+  bool getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, Eigen::Vector3d& new_pos) const;
 
  private:
   ros::NodeHandle nh_;
