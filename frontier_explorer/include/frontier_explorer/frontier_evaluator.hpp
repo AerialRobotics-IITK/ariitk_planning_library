@@ -34,7 +34,16 @@ class FrontierEvaluator {
             Eigen::Vector3d center;
         };
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
-        void clusterFrontiers(const Eigen::Vector3d &point);
+        void clusterFrontiers(const Eigen::Vector3d& point);
+        inline bool isNeighbour(const Eigen::Vector3d &center, const Eigen::Vector3d& point) {
+            if (( fabs(center.x() - point.x()) < voxel_size_ * frontier_length_factor_ 
+                ||  fabs(center.y() - point.y()) < voxel_size_ * frontier_length_factor_ )
+                &&  fabs(center.z() - point.z()) < voxel_size_ * frontier_length_factor_) {
+                    return true;
+            } else {
+                return false;
+            } 
+        }
 
         std::vector<Frontier> frontiers_;
         std::vector<Eigen::Vector3d> neighbor_voxels_;
@@ -47,7 +56,9 @@ class FrontierEvaluator {
         double block_size_;
         double checking_dist_;
         double surface_distance_threshold_factor_;
-        double frontier_size_factor_;
+        double frontier_length_factor_;
+        double slice_level_;
+        double height_range_;
 
         bool accurate_frontiers_;
         bool visualize_;    

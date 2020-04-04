@@ -1,9 +1,12 @@
 # Frontier Exploration Parameters
 
-accurate_frontiers: false                  # True: explicitely compute all frontier voxels
+accurate_frontiers: true                 # True: explicitely compute all frontier voxels
                                           # (may degrade performance),
                                           # False: estimate frontier voxels by checking only some neighbors (detection
                                           # depends on previous views)
 checking_distance: 1.0                    # Distance in voxelsizes where we check for known voxels
 surface_distance_threshold_factor: 2.0    # Distance in voxelsizes upto which voxels near the surface are marked as occupied
-frontier_size_factor: 20                        # maximum height of the point in world_frame that will be considered as frontier
+frontier_length_factor: 3                      # maximum height of the point in world_frame that will be considered as frontier
+slice_level: 1.0                          # Height at which the ESDF slice is provided
+height_range: 0.8                         # Only consider those points for frontiers 
+                                          # whose height lies in $slice_level +- $height_range
