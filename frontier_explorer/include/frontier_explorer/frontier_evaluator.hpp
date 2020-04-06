@@ -34,23 +34,30 @@ class FrontierEvaluator {
             Eigen::Vector3d center;
         };
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
-        void clusterFrontiers(const Eigen::Vector3d& point);
-        inline bool isNeighbour(const Eigen::Vector3d &center, const Eigen::Vector3d& point) {
-            if (( fabs(center.x() - point.x()) < voxel_size_ * frontier_length_factor_ 
-                ||  fabs(center.y() - point.y()) < voxel_size_ * frontier_length_factor_ )
-                &&  fabs(center.z() - point.z()) < voxel_size_ * frontier_length_factor_) {
-                    return true;
-            } else {
-                return false;
-            } 
-        }
+        void clusterFrontiers();
 
         std::vector<Frontier> frontiers_;
         std::vector<Eigen::Vector3d> neighbor_voxels_;
+        std::vector<Eigen::Vector3d> planar_neighbor_voxels_;
 
         mav_planning::PhysicalConstraints constraints_;
 
         voxblox::EsdfServer esdf_server_;
+
+        void neighbour_coords(const std::string& key, Frontier& frontier) {
+            auto point = hash_map_.at(key);
+            hash_map_.erase(key);
+            frontier.center = (frontier.center * frontier.points.size() + point) / 
+                                (frontier.points.size() + 1);
+            frontier.points.push_back(point);
+            for (auto& next_point: planar_neighbor_voxels_) {
+                auto str = std::to_string(int((point.x() + next_point.x())/voxel_size_)) + "," + std::to_string(int((point.y() + next_point.y())/voxel_size_));
+                if (hash_map_.find(str) != hash_map_.end()) {
+                    neighbour_coords(str, frontier);
+                }
+            }
+        };
+        std::unordered_map<std::string, Eigen::Vector3d> hash_map_; 
 
         double voxel_size_;
         double block_size_;

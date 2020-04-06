@@ -61,12 +61,39 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, -vs));
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, -vs));
     }
+
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, 2*vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, 2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, 2*vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -2*vs, -0));
 }
 
 void FrontierEvaluator::run() {
     frontiers_.clear();
     frontiers_msg_.frontiers.clear();
+    hash_map_.clear();
     findFrontiers();
+    clusterFrontiers();
     if (visualize_) {
         visualization_msgs::MarkerArray frontier_marker;
         createMarkerFromFrontiers(&frontier_marker);
@@ -85,7 +112,9 @@ void FrontierEvaluator::findFrontiers() {
         for (size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
             if (isFrontierVoxel(coord)){
-                clusterFrontiers(coord);
+                std::string hash = std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y()/voxel_size_));
+                coord(2,0) = slice_level_;
+                hash_map_[hash] = coord;
             }
         }
     }
@@ -147,25 +176,18 @@ bool FrontierEvaluator::getVoxelWeight(const Eigen::Vector3d& point, double& wei
     return false;
 }
 
-void FrontierEvaluator::clusterFrontiers(const Eigen::Vector3d& point) {
-    if (frontiers_.empty() || !isNeighbour(frontiers_.back().center, point)) {
+void FrontierEvaluator::clusterFrontiers() {
+    while(!hash_map_.empty()) {
         Frontier frontier;
-        ariitk_planning_msgs::Frontier frontier_msg;
-        frontier.center = point;
-        frontier_msg.center.x = frontier.center(0, 0);
-        frontier_msg.center.y = frontier.center(1, 0);
-        frontier_msg.center.z = frontier.center(2, 0);
-        frontier.points.push_back(point);
+        neighbour_coords(hash_map_.begin()->first, frontier);
         frontiers_.push_back(frontier);
+
+        ariitk_planning_msgs::Frontier frontier_msg;
+        frontier_msg.center.x = frontier.center.x();
+        frontier_msg.center.y = frontier.center.y();
+        frontier_msg.center.z = frontier.center.z();
+        frontier_msg.num_points = frontier.points.size();
         frontiers_msg_.frontiers.push_back(frontier_msg);
-    } else {
-        frontiers_.back().center = ((frontiers_.back().center * frontiers_.back().points.size()) + point)/
-                                                        (frontiers_.back().points.size() + 1);
-        frontiers_msg_.frontiers.back().center.x = frontiers_.back().center(0, 0);
-        frontiers_msg_.frontiers.back().center.y = frontiers_.back().center(1, 0);
-        frontiers_msg_.frontiers.back().center.z = frontiers_.back().center(2, 0);
-        frontiers_msg_.frontiers.back().num_points += 1;
-        frontiers_.back().points.push_back(point);
     }
 }
 
