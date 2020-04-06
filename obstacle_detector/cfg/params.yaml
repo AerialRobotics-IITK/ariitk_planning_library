@@ -1,0 +1,8 @@
+#Obstacle Detector Parameters
+robot_radius: 0.4
+voxel_size: 0.2
+visible_horizon: 10.0
+slice_level: 1.0
+height_range: 0.8
+quad_frame_id: firefly/base_link
+world_frame_id: world

@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>obstacle_detector</name>
+  <version>0.0.0</version>
+  <description>
+    PointCloud-based obstacle detection.
+  </description>
+
+  <author email="ashwins@iitk.ac.in">Ashwin Shenai</author>
+  <author email="gajendranagar02@gmail.com">Gajendra Nagar</author>
+
+  <maintainer email="ashwins@iitk.ac.in">Ashwin Shenai</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>pcl_ros</depend>
+  <depend>tf2</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>pcl_conversions</depend>
+
+</package>
