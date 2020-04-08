@@ -103,20 +103,21 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     Eigen::Vector3d new_goal_pos;
     if(!getNearestFreeSpaceToPoint(goal_pose.position_W, new_goal_pos)) {
       ROS_ERROR("No free points near goal pose, and goal pose is occupied!");
-      return false;
+      response.success = false;
+      return true;
     }
     goal_pose.position_W = new_goal_pos;
   }
 
   if (getMapDistance(start_pose.position_W) < constraints_.robot_radius) {
-  ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
-  Eigen::Vector3d new_start_pos;
-  if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
-    ROS_ERROR("No free points near start pose, and start pose is occupied!");
-    return false;
-  }
-  start_pose.position_W = new_start_pos;
-  return false;
+    ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
+    Eigen::Vector3d new_start_pos;
+    if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
+      ROS_ERROR("No free points near start pose, and start pose is occupied!");
+      response.success = false;
+      return true;
+    }
+    start_pose.position_W = new_start_pos;
   }
 
   voxblox::Point start_point =
@@ -178,6 +179,9 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
                   << std::endl
                   << mav_trajectory_generation::timing::Timing::Print());
   }
+
+  response.success = true;
+  return true;
 }
 
 double SkeletonGlobalPlanner::getMapDistance(
@@ -249,7 +253,7 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
   double distance = 0.0;
   Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
 
-  const size_t max_iterations = 100;
+  const size_t max_iterations = 1000;
   for(size_t iter = 0; iter < max_iterations; iter++) {
     distance = getMapDistanceAndGradient(final_pos, gradient);
     if(distance >= constraints_.robot_radius) {

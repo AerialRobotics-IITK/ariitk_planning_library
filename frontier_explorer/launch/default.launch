@@ -1,14 +1,33 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="mav_name"      default="firefly"/>
+    <arg name="mav_name"      default="firefly"/>
 
-  <group ns="$(arg mav_name)">
-    <node name="frontier_evaluator" pkg="frontier_explorer" type="frontier_evaluator_node" output="screen" clear_params="true" respawn="true">
-        <remap from="frontier_evaluator/tsdf_map_in" to="tsdf_map" />
+    <group ns="$(arg mav_name)">
+        <node name="frontier_planner" pkg="frontier_explorer" type="frontier_planner_node" args="-alsologtostderr" output="screen">
+            <remap from="odometry"                       to="ground_truth/odometry" />
+            <remap from="frontier_planner/waypoint"      to="waypoint" />
+            <remap from="frontier_planner/tsdf_map_in"   to="tsdf_map" />
+            <remap from="plan"                           to="voxblox_global_planner/plan"/>
+            <remap from="publish_path"                           to="voxblox_global_planner/publish_path"/>
 
-        <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
-        <rosparam file="$(find frontier_explorer)/cfg/params.yaml" command="load" />
-      </node>
-  </group>
+            <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
+            <rosparam file="$(find frontier_explorer)/cfg/params.yaml"      command="load" />
+        </node>
 
+        <node name="mav_local_planner" pkg="mav_local_planner" type="mav_local_planner_node" args="-alsologtostderr" output="screen" clear_params="true">
+            <remap from="odometry"                      to="ground_truth/odometry" />
+            <remap from="send_waypt"      to="frontier_planner/send_waypt" />
+            <remap from="mav_local_planner/esdf_map_in" to="esdf_map" />
+            <remap from="mav_local_planner/tsdf_map_in" to="tsdf_map" />
+      
+            <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
+        </node>   
+
+        <node name="voxblox_global_planner" pkg="voxblox_global_planner" type="skeleton_global_planner_node" output="screen" clear_params="true" respawn="true">
+            <remap from="voxblox_global_planner/esdf_map_in" to="esdf_map" />
+            <remap from="voxblox_global_planner/tsdf_map_in" to="tsdf_map" />
+            <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load"/>
+          </node>
+    </group>
+    
 </launch>

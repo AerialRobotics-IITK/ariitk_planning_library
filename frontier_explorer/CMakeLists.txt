@@ -14,16 +14,17 @@ include_directories(${Eigen3_INCLUDE_DIRS})
 #############
 cs_add_library(${PROJECT_NAME}
   src/frontier_evaluator.cpp
+  src/frontier_planner.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${Eigen3_LIBRARIES})
 
 ############
 # BINARIES #
 ############
-cs_add_executable(frontier_evaluator_node
-  src/frontier_evaluator_node.cpp
+cs_add_executable(frontier_planner_node
+  src/frontier_planner_node.cpp
 )
-target_link_libraries(frontier_evaluator_node ${PROJECT_NAME})
+target_link_libraries(frontier_planner_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #

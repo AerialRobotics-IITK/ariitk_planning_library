@@ -209,7 +209,6 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     center.ns = "center";
     center.color.r = 0.0;
     center.scale.x = center.scale.y = center.scale.y = voxel_size_ * 2.0;
-    ROS_ERROR_STREAM_ONCE( "size" << frontiers_.size());
 
     for (const auto& frontier : frontiers_) {
         for (const auto& point : frontier.points) {
@@ -225,6 +224,7 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
         cube_center.z = frontier.center.z();
         center.points.push_back(cube_center);
     }
+
     markers->markers.push_back(marker);
     markers->markers.push_back(center);
 }
@@ -293,6 +293,7 @@ void FrontierEvaluator::createMarkerFromVoxelStates(visualization_msgs::MarkerAr
             }
         }
     }
+
     markers->markers.push_back(free_marker);
     markers->markers.push_back(occupied_marker);
     markers->markers.push_back(unknown_marker);
