@@ -3,7 +3,7 @@
   <arg name="mav_name"      default="firefly"/>
 
   <group ns="$(arg mav_name)">
-    <node name="frontier_evaluator" pkg="frontier_explorer" type="frontier_evaluator_node" output="screen" clear_params="true" respawn="true">
+    <node name="frontier_explorer" pkg="frontier_explorer" type="frontier_explorer_node" output="screen" clear_params="true" respawn="true">
         <remap from="frontier_evaluator/tsdf_map_in" to="tsdf_map" />
 
         <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
