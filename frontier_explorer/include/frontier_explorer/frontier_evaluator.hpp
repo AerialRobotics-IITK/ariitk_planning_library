@@ -66,6 +66,7 @@ class FrontierEvaluator {
         double frontier_length_factor_;
         double slice_level_;
         double height_range_;
+        double min_frontier_size_;
 
         bool accurate_frontiers_;
         bool visualize_;    

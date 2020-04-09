@@ -12,6 +12,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("frontier_length_factor", frontier_length_factor_);
     nh_private.getParam("slice_level", slice_level_);
     nh_private.getParam("height_range", height_range_);
+    nh_private.getParam("min_frontier_size", min_frontier_size_);
     CHECK(esdf_server_.getEsdfMapPtr());
 
     constraints_.setParametersFromRos(nh_private);
@@ -86,6 +87,8 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -2*vs, 0));
     planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 2*vs, 0));
     planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -2*vs, -0));
+
+    ROS_INFO("%lf", min_frontier_size_);
 }
 
 void FrontierEvaluator::run() {
@@ -180,6 +183,7 @@ void FrontierEvaluator::clusterFrontiers() {
     while(!hash_map_.empty()) {
         Frontier frontier;
         neighbour_coords(hash_map_.begin()->first, frontier);
+        if(frontier.points.size() < min_frontier_size_) { return; }
         frontiers_.push_back(frontier);
 
         ariitk_planning_msgs::Frontier frontier_msg;
@@ -209,7 +213,6 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     center.ns = "center";
     center.color.r = 0.0;
     center.scale.x = center.scale.y = center.scale.y = voxel_size_ * 2.0;
-    ROS_ERROR_STREAM_ONCE( "size" << frontiers_.size());
 
     for (const auto& frontier : frontiers_) {
         for (const auto& point : frontier.points) {
