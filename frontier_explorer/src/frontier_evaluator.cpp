@@ -101,6 +101,7 @@ void FrontierEvaluator::run() {
         visualization_msgs::MarkerArray frontier_marker;
         createMarkerFromFrontiers(&frontier_marker);
         frontier_pub_.publish(frontier_marker);
+        visualizeVoxelStates();
     }
 }
 
@@ -147,7 +148,7 @@ VoxelState FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
             return VoxelState::UNKNOWN;
         }
     } else {
-        return VoxelState::UNKNOWN;
+        return VoxelState::OCCUPIED;
     }
 }
 

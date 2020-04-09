@@ -5,9 +5,9 @@ accurate_frontiers: true                 # True: explicitely compute all frontie
                                           # False: estimate frontier voxels by checking only some neighbors (detection
                                           # depends on previous views)
 checking_distance: 1.0                    # Distance in voxelsizes where we check for known voxels
-surface_distance_threshold_factor: 2.0    # Distance in voxelsizes upto which voxels near the surface are marked as occupied
+surface_distance_threshold_factor: 3.5    # Distance in voxelsizes upto which voxels near the surface are marked as occupied
 frontier_length_factor: 3                      # maximum height of the point in world_frame that will be considered as frontier
 slice_level: 1.0                          # Height at which the ESDF slice is provided
-min_frontier_size: 10
+min_frontier_size: 5                      # Minimum points required in a frontier
 height_range: 0.8                         # Only consider those points for frontiers 
                                           # whose height lies in $slice_level +- $height_range
