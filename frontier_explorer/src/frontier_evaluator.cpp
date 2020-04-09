@@ -11,7 +11,8 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("surface_distance_threshold_factor", surface_distance_threshold_factor_);
     nh_private.getParam("frontier_length_factor", frontier_length_factor_);
     nh_private.getParam("slice_level", slice_level_);
-    nh_private.getParam("height_range", height_range_);
+    nh_private.getParam("upper_range", upper_range_);
+    nh_private.getParam("lower_range", lower_range_);
     nh_private.getParam("min_frontier_size", min_frontier_size_);
     CHECK(esdf_server_.getEsdfMapPtr());
 
@@ -126,7 +127,7 @@ void FrontierEvaluator::findFrontiers() {
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     if(getVoxelState(voxel) != VoxelState::FREE) { return false; }
-    if(fabs(slice_level_ - voxel(2,0)) >= height_range_) { return false; }
+    if((slice_level_ - voxel(2,0)) >= lower_range_ || (voxel(2,0) - slice_level_) >= upper_range_) { return false; }
     VoxelState voxel_state;
     for(auto& neighbour : neighbor_voxels_) {
         voxel_state = getVoxelState(voxel + neighbour);
@@ -184,7 +185,7 @@ void FrontierEvaluator::clusterFrontiers() {
     while(!hash_map_.empty()) {
         Frontier frontier;
         neighbour_coords(hash_map_.begin()->first, frontier);
-        if(frontier.points.size() < min_frontier_size_) { return; }
+        if(frontier.points.size() < min_frontier_size_) { continue; }
         frontiers_.push_back(frontier);
 
         ariitk_planning_msgs::Frontier frontier_msg;

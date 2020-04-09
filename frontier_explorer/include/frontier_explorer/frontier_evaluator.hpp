@@ -65,7 +65,8 @@ class FrontierEvaluator {
         double surface_distance_threshold_factor_;
         double frontier_length_factor_;
         double slice_level_;
-        double height_range_;
+        double upper_range_;
+        double lower_range_;
         double min_frontier_size_;
 
         bool accurate_frontiers_;
