@@ -89,7 +89,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 2*vs, 0));
     planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -2*vs, -0));
 
-    ROS_INFO("%lf", min_frontier_size_);
 }
 
 void FrontierEvaluator::run() {
@@ -214,7 +213,7 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     visualization_msgs::Marker center = marker;
     center.ns = "center";
     center.color.r = 0.0;
-    center.scale.x = center.scale.y = center.scale.y = voxel_size_ * 2.0;
+    center.scale.x = center.scale.y = center.scale.y = voxel_size_;
 
     for (const auto& frontier : frontiers_) {
         for (const auto& point : frontier.points) {

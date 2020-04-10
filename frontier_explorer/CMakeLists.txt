@@ -14,6 +14,7 @@ include_directories(${Eigen3_INCLUDE_DIRS})
 #############
 cs_add_library(${PROJECT_NAME}
   src/frontier_evaluator.cpp
+  src/goal_selector.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${Eigen3_LIBRARIES})
 
