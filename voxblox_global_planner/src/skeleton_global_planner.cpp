@@ -193,14 +193,13 @@ double SkeletonGlobalPlanner::getMapDistance(
   return distance;
 }
 
-double SkeletonGlobalPlanner::getMapDistanceAndGradient(
-    const Eigen::Vector3d& position, Eigen::Vector3d& gradient) const {
-  double distance = 0.0;
+bool SkeletonGlobalPlanner::getMapDistanceAndGradient(const Eigen::Vector3d& position,
+    double& distance, Eigen::Vector3d& gradient) const {
   if(!voxblox_server_.getEsdfMapPtr()->
     getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) {
-    return 0;
+    return false;
   }
-  return distance;
+  return true;
 }
 
 
@@ -251,8 +250,8 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
 
   const size_t max_iterations = 100;
   for(size_t iter = 0; iter < max_iterations; iter++) {
-    distance = getMapDistanceAndGradient(final_pos, gradient);
-    if(distance >= constraints_.robot_radius) {
+    bool result = getMapDistanceAndGradient(final_pos, distance, gradient);
+    if(result && distance >= constraints_.robot_radius) {
       new_pos = final_pos;
       ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
               pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());
