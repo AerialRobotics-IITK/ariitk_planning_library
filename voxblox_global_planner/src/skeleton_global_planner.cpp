@@ -245,9 +245,9 @@ void SkeletonGlobalPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf
 bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, 
     Eigen::Vector3d& new_pos) const {
   Eigen::Vector3d final_pos = pos;
-  double distance = 0.0;
   Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
   Eigen::Vector3d direction = Eigen::Vector3d::Zero();
+  double distance = 0.0;
   
   const double angle_step = 0.1;
   const size_t max_iterations = 10;
@@ -264,20 +264,6 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
       }
     }
   }
-
-  // const size_t max_iterations = 1000;
-  // for(size_t iter = 0; iter < max_iterations; iter++) {
-  //   bool result = getMapDistanceAndGradient(final_pos, distance, gradient);
-  //   if(result && distance >= constraints_.robot_radius) {
-  //     new_pos = final_pos;
-  //     ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
-  //             pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());
-  //     return true;
-  //   }
-  //   if(gradient.norm() > 1e-6) {
-  //     final_pos += gradient.normalized() * (iter/100 + 1) * constraints_.robot_radius;
-  //   }
-  // }
   return false;
 }
 
