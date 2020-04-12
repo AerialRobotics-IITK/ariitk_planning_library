@@ -247,20 +247,37 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
   Eigen::Vector3d final_pos = pos;
   double distance = 0.0;
   Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
-
-  const size_t max_iterations = 100;
-  for(size_t iter = 0; iter < max_iterations; iter++) {
-    bool result = getMapDistanceAndGradient(final_pos, distance, gradient);
-    if(result && distance >= constraints_.robot_radius) {
-      new_pos = final_pos;
-      ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
+  Eigen::Vector3d direction = Eigen::Vector3d::Zero();
+  
+  const double angle_step = 0.1;
+  const size_t max_iterations = 10;
+  for(size_t step = 1; step <= max_iterations; step++) {
+    for(double angle = -M_PI; angle < M_PI; angle += angle_step) {
+      direction = Eigen::Vector3d(cos(angle), sin(angle), 0);
+      final_pos = pos + direction * step * constraints_.robot_radius;
+      if(getMapDistanceAndGradient(final_pos, distance, gradient)
+          && distance >= constraints_.robot_radius) {
+        new_pos = final_pos;
+        ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
               pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());
-      return true;
-    }
-    if(gradient.norm() > 1e-6) {
-      final_pos += gradient.normalized() * constraints_.robot_radius;
+        return true;
+      }
     }
   }
+
+  // const size_t max_iterations = 1000;
+  // for(size_t iter = 0; iter < max_iterations; iter++) {
+  //   bool result = getMapDistanceAndGradient(final_pos, distance, gradient);
+  //   if(result && distance >= constraints_.robot_radius) {
+  //     new_pos = final_pos;
+  //     ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
+  //             pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());
+  //     return true;
+  //   }
+  //   if(gradient.norm() > 1e-6) {
+  //     final_pos += gradient.normalized() * (iter/100 + 1) * constraints_.robot_radius;
+  //   }
+  // }
   return false;
 }
 
