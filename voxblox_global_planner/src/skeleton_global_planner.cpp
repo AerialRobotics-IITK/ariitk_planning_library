@@ -98,79 +98,90 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
                                       << voxblox::timing::Timing::Print());
   }
 
-    if (getMapDistance(goal_pose.position_W) < constraints_.robot_radius) {
-      ROS_ERROR("Goal pose occupied!");
+  if (getMapDistance(goal_pose.position_W) < constraints_.robot_radius) {
+    ROS_WARN("Goal pose occupied! Planning to Nearest Free Point");
+    Eigen::Vector3d new_goal_pos;
+    if(!getNearestFreeSpaceToPoint(goal_pose.position_W, new_goal_pos)) {
+      ROS_ERROR("No free points near goal pose, and goal pose is occupied!");
       return false;
     }
-
-    voxblox::Point start_point =
-        start_pose.position_W.cast<voxblox::FloatingPoint>();
-    voxblox::Point goal_point =
-        goal_pose.position_W.cast<voxblox::FloatingPoint>();
-
-    visualization_msgs::MarkerArray marker_array;
-    bool shorten_graph = true;
-
-    voxblox::AlignedVector<voxblox::Point> diagram_coordinate_path;
-    mav_trajectory_generation::timing::Timer astar_diag_timer(
-        "plan/astar_diag");
-    bool success = skeleton_planner_.getPathUsingEsdfAndDiagram(
-        start_point, goal_point, &diagram_coordinate_path);
-    mav_msgs::EigenTrajectoryPointVector diagram_path;
-    for (const voxblox::Point &voxblox_point : diagram_coordinate_path) {
-      mav_msgs::EigenTrajectoryPoint point;
-      point.position_W = voxblox_point.cast<double>();
-      diagram_path.push_back(point);
-    }
-    double path_length = mav_planning::computePathLength(diagram_path);
-    int num_vertices = diagram_path.size();
-    astar_diag_timer.Stop();
-
-    if (visualize_) {
-      marker_array.markers.push_back(mav_planning::createMarkerForPath(
-          diagram_path, frame_id_, mav_visualization::Color::Purple(),
-          "astar_diag", 0.1));
-    }
-    ROS_INFO("Diag A* Success? %d Path length: %f Vertices: %d", success,
-             path_length, num_vertices);
-    
-    if (success && getMapDistance(start_pose.position_W) < constraints_.robot_radius) {
-      ROS_ERROR("Start pose occupied!");
-      return false;
-    }
-
-    if (shorten_graph) {
-      mav_trajectory_generation::timing::Timer shorten_timer(
-          "plan/astar_diag/shorten");
-      mav_msgs::EigenTrajectoryPointVector short_path;
-      path_shortener_.shortenPath(diagram_path, &short_path);
-      path_length = mav_planning::computePathLength(short_path);
-      num_vertices = short_path.size();
-      ROS_INFO("Diagram Shorten Success? %d Path length: %f Vertices: %d",
-               success, path_length, num_vertices);
-      if (visualize_)
-      {
-        marker_array.markers.push_back(mav_planning::createMarkerForPath(
-            short_path, frame_id_, mav_visualization::Color::Pink(),
-            "short_astar_plan", 0.1));
-      }
-      shorten_timer.Stop();
-
-      last_waypoints_ = short_path;
-    }
-
-    if (visualize_) {
-      path_marker_pub_.publish(marker_array);
-    }
-    if (verbose_) {
-      ROS_INFO_STREAM("All timings: "
-                    << std::endl
-                    << mav_trajectory_generation::timing::Timing::Print());
-    }
+    goal_pose.position_W = new_goal_pos;
   }
 
+  if (getMapDistance(start_pose.position_W) < constraints_.robot_radius) {
+  ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
+  Eigen::Vector3d new_start_pos;
+  if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
+    ROS_ERROR("No free points near start pose, and start pose is occupied!");
+    return false;
+  }
+  start_pose.position_W = new_start_pos;
+  return false;
+  }
+
+  voxblox::Point start_point =
+      start_pose.position_W.cast<voxblox::FloatingPoint>();
+  voxblox::Point goal_point =
+      goal_pose.position_W.cast<voxblox::FloatingPoint>();
+
+  visualization_msgs::MarkerArray marker_array;
+  bool shorten_graph = true;
+
+  voxblox::AlignedVector<voxblox::Point> diagram_coordinate_path;
+  mav_trajectory_generation::timing::Timer astar_diag_timer(
+      "plan/astar_diag");
+  bool success = skeleton_planner_.getPathUsingEsdfAndDiagram(
+      start_point, goal_point, &diagram_coordinate_path);
+  mav_msgs::EigenTrajectoryPointVector diagram_path;
+  for (const voxblox::Point &voxblox_point : diagram_coordinate_path) {
+    mav_msgs::EigenTrajectoryPoint point;
+    point.position_W = voxblox_point.cast<double>();
+    diagram_path.push_back(point);
+  }
+  double path_length = mav_planning::computePathLength(diagram_path);
+  int num_vertices = diagram_path.size();
+  astar_diag_timer.Stop();
+
+  if (visualize_) {
+    marker_array.markers.push_back(mav_planning::createMarkerForPath(
+        diagram_path, frame_id_, mav_visualization::Color::Purple(),
+      "astar_diag", 0.1));
+  }
+  ROS_INFO("Diag A* Success? %d Path length: %f Vertices: %d", success,
+            path_length, num_vertices);
+
+  if (shorten_graph) {
+    mav_trajectory_generation::timing::Timer shorten_timer(
+        "plan/astar_diag/shorten");
+    mav_msgs::EigenTrajectoryPointVector short_path;
+    path_shortener_.shortenPath(diagram_path, &short_path);
+    path_length = mav_planning::computePathLength(short_path);
+    num_vertices = short_path.size();
+    ROS_INFO("Diagram Shorten Success? %d Path length: %f Vertices: %d",
+              success, path_length, num_vertices);
+    if (visualize_)
+    {
+      marker_array.markers.push_back(mav_planning::createMarkerForPath(
+          short_path, frame_id_, mav_visualization::Color::Pink(),
+          "short_astar_plan", 0.1));
+    }
+    shorten_timer.Stop();
+
+    last_waypoints_ = short_path;
+  }
+
+  if (visualize_) {
+    path_marker_pub_.publish(marker_array);
+  }
+  if (verbose_) {
+    ROS_INFO_STREAM("All timings: "
+                  << std::endl
+                  << mav_trajectory_generation::timing::Timing::Print());
+  }
+}
+
 double SkeletonGlobalPlanner::getMapDistance(
-    const Eigen::Vector3d& position) const {
+    const Eigen::Vector3d& position) {
   if (!voxblox_server_.getEsdfMapPtr()) {
     return 0.0;
   }
@@ -219,6 +230,26 @@ void SkeletonGlobalPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf
   skeleton_generator_.setNumNeighborsForEdge(num_neighbors_for_edge);
 
   skeleton_generator_.setMinGvdDistance(constraints_.robot_radius);
+}
+
+bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, 
+    Eigen::Vector3d& new_pos) {  
+  const double angle_step = 0.1;
+  const size_t max_iterations = 10;
+  double distance = 0.0;
+
+  for(size_t step = 1; step <= max_iterations; step++) {
+    for(double angle = -M_PI; angle < M_PI; angle += angle_step) {
+      Eigen::Vector3d final_pos = pos + Eigen::Vector3d(cos(angle), sin(angle), 0) * step * constraints_.robot_radius;
+      if(getMapDistance(final_pos) >= constraints_.robot_radius) {
+        new_pos = final_pos;
+        ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
+              pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace mav_planning
