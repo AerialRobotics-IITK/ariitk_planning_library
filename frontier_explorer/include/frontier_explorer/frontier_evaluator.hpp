@@ -34,6 +34,10 @@ class FrontierEvaluator {
             Eigen::Vector3d center;
         };
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
+        inline std::string getHash(const Eigen::Vector3d& coord) { 
+            return std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y() / voxel_size_));
+        }
+        void findNeighbours(const std::string& key, Frontier& frontier);
         void clusterFrontiers();
 
         std::vector<Frontier> frontiers_;
@@ -44,19 +48,6 @@ class FrontierEvaluator {
 
         voxblox::EsdfServer esdf_server_;
 
-        void neighbour_coords(const std::string& key, Frontier& frontier) {
-            auto point = hash_map_.at(key);
-            hash_map_.erase(key);
-            frontier.center = (frontier.center * frontier.points.size() + point) / 
-                                (frontier.points.size() + 1);
-            frontier.points.push_back(point);
-            for (auto& next_point: planar_neighbor_voxels_) {
-                auto str = std::to_string(int((point.x() + next_point.x())/voxel_size_)) + "," + std::to_string(int((point.y() + next_point.y())/voxel_size_));
-                if (hash_map_.find(str) != hash_map_.end()) {
-                    neighbour_coords(str, frontier);
-                }
-            }
-        };
         std::unordered_map<std::string, Eigen::Vector3d> hash_map_; 
 
         double voxel_size_;
