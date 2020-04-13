@@ -181,7 +181,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
 }
 
 double SkeletonGlobalPlanner::getMapDistance(
-    const Eigen::Vector3d& position) const {
+    const Eigen::Vector3d& position) {
   if (!voxblox_server_.getEsdfMapPtr()) {
     return 0.0;
   }
@@ -192,16 +192,6 @@ double SkeletonGlobalPlanner::getMapDistance(
   }
   return distance;
 }
-
-bool SkeletonGlobalPlanner::getMapDistanceAndGradient(const Eigen::Vector3d& position,
-    double& distance, Eigen::Vector3d& gradient) const {
-  if(!voxblox_server_.getEsdfMapPtr()->
-    getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) {
-    return false;
-  }
-  return true;
-}
-
 
 bool SkeletonGlobalPlanner::publishPathCallback(
     std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response) {
@@ -243,20 +233,15 @@ void SkeletonGlobalPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf
 }
 
 bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, 
-    Eigen::Vector3d& new_pos) const {
-  Eigen::Vector3d final_pos = pos;
-  Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
-  Eigen::Vector3d direction = Eigen::Vector3d::Zero();
-  double distance = 0.0;
-  
+    Eigen::Vector3d& new_pos) {  
   const double angle_step = 0.1;
   const size_t max_iterations = 10;
+  double distance = 0.0;
+
   for(size_t step = 1; step <= max_iterations; step++) {
     for(double angle = -M_PI; angle < M_PI; angle += angle_step) {
-      direction = Eigen::Vector3d(cos(angle), sin(angle), 0);
-      final_pos = pos + direction * step * constraints_.robot_radius;
-      if(getMapDistanceAndGradient(final_pos, distance, gradient)
-          && distance >= constraints_.robot_radius) {
+      Eigen::Vector3d final_pos = pos + Eigen::Vector3d(cos(angle), sin(angle), 0) * step * constraints_.robot_radius;
+      if(getMapDistance(final_pos) >= constraints_.robot_radius) {
         new_pos = final_pos;
         ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
               pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());
