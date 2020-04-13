@@ -8,7 +8,6 @@
 
 namespace ariitk::frontier_explorer {
 
-using ShouldVisualizeVoxelFunctionType = std::function<bool(const voxblox::TsdfVoxel& voxel, const voxblox::Point& coord)>;
 using ShouldVisualizeFunctionType = std::function<bool(const Eigen::Vector3d& coord)>;
 
 class Color : public std_msgs::ColorRGBA {
@@ -40,11 +39,12 @@ class FrontierVisualizer {
     public:
         FrontierVisualizer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
         void setTsdfLayerPtr(voxblox::Layer<voxblox::TsdfVoxel>* ptr){ tsdf_layer_ptr_ = ptr; };
+        void createPublisher(const std::string& topic_name);
         enum class ColorType{WHITE, BLACK, GRAY, RED, GREEN, BLUE, YELLOW, ORANGE, PURPLE, CHARTREUSE, TEAL, PINK};
         void visualizeFromLayer(const std::string& topic_name, const ShouldVisualizeFunctionType& vis_function, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::PINK);
         void visualizeFromPoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
-                       const std::string& frame_id = "world", const ColorType& color = ColorType::PINK);
+                       const std::string& frame_id = "world", const ColorType& color = ColorType::PINK, const double& size_factor = 0.5);
 
     private:
         ros::NodeHandle nh_;
@@ -55,6 +55,7 @@ class FrontierVisualizer {
         bool visualize_;
 
         std::unordered_map<ColorType, Color> color_map_;
+        std::unordered_map<std::string, ros::Publisher> publisher_map_;
 };
 
 } // namespace ariitk::frontier_explorer

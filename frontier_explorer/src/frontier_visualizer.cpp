@@ -6,6 +6,8 @@ FrontierVisualizer::FrontierVisualizer(const ros::NodeHandle& nh, const ros::Nod
     :   nh_(nh)
     ,   nh_private_(nh_private)
     ,   visualize_(false) {
+    nh_.getParam("visualize", visualize_);
+
     color_map_.insert(std::make_pair(FrontierVisualizer::ColorType::WHITE,      Color::White()));
     color_map_.insert(std::make_pair(FrontierVisualizer::ColorType::BLACK,      Color::Black()));
     color_map_.insert(std::make_pair(FrontierVisualizer::ColorType::BLUE,       Color::Blue()));
@@ -18,6 +20,11 @@ FrontierVisualizer::FrontierVisualizer(const ros::NodeHandle& nh, const ros::Nod
     color_map_.insert(std::make_pair(FrontierVisualizer::ColorType::TEAL,       Color::Teal()));
     color_map_.insert(std::make_pair(FrontierVisualizer::ColorType::CHARTREUSE, Color::Chartreuse()));
     color_map_.insert(std::make_pair(FrontierVisualizer::ColorType::PURPLE,     Color::Purple()));
+}
+
+void FrontierVisualizer::createPublisher(const std::string& topic_name) {
+    ros::Publisher marker_pub = nh_private_.advertise<visualization_msgs::MarkerArray>(topic_name, 1);
+    publisher_map_.insert(std::make_pair(topic_name, marker_pub));
 }
 
 void FrontierVisualizer::visualizeFromLayer(const std::string& topic_name, const ShouldVisualizeFunctionType& vis_function
@@ -57,12 +64,11 @@ void FrontierVisualizer::visualizeFromLayer(const std::string& topic_name, const
 
     visualization_msgs::MarkerArray markers;
     markers.markers.push_back(marker);
-    ros::Publisher marker_pub = nh_private_.advertise<visualization_msgs::MarkerArray>(topic_name, 1);
-    marker_pub.publish(markers);
+    publisher_map_[topic_name].publish(markers);    // protect this 
 }
 
 void FrontierVisualizer::visualizeFromPoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
-                       const std::string& frame_id, const ColorType& color) {
+                       const std::string& frame_id, const ColorType& color, const double& size_factor) {
     CHECK_NOTNULL(tsdf_layer_ptr_);
     
     visualization_msgs::Marker marker;
@@ -71,7 +77,7 @@ void FrontierVisualizer::visualizeFromPoints(const std::string& topic_name, cons
     marker.ns = topic_name;
     marker.id = 0;
     marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.y = tsdf_layer_ptr_->voxel_size()/2.0;
+    marker.scale.x = marker.scale.y = marker.scale.y = tsdf_layer_ptr_->voxel_size() * size_factor;
     marker.action = visualization_msgs::Marker::ADD;
     marker.color = color_map_[color];
 
@@ -85,8 +91,7 @@ void FrontierVisualizer::visualizeFromPoints(const std::string& topic_name, cons
     
     visualization_msgs::MarkerArray markers;
     markers.markers.push_back(marker);
-    ros::Publisher marker_pub = nh_private_.advertise<visualization_msgs::MarkerArray>(topic_name, 1);
-    marker_pub.publish(markers);
+    publisher_map_[topic_name].publish(markers);    // protect this 
 }
 
 } // namespace ariitk::frontier_explorer

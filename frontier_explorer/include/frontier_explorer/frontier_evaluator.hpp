@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include <ariitk_planning_msgs/Frontiers.h>
+#include <frontier_explorer/frontier_visualizer.hpp>
 
 namespace ariitk::frontier_explorer {
 
@@ -24,9 +25,9 @@ class FrontierEvaluator {
         bool getVoxelWeight(const Eigen::Vector3d& point, double& weight);
         ariitk_planning_msgs::Frontiers getFrontiers() const { return frontiers_msg_; };
         
-        void createMarkerFromFrontiers(visualization_msgs::MarkerArray *markers);
-        void createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers);
         void visualizeVoxelStates();
+        void visualizeFrontierPoints();
+        void visualizeFrontierCenters();
 
     protected:
         struct Frontier{
@@ -73,11 +74,10 @@ class FrontierEvaluator {
         bool visualize_;    
 
         std::string frame_id_;
+
+        FrontierVisualizer visualizer_;
         
         ariitk_planning_msgs::Frontiers frontiers_msg_;
-
-        ros::Publisher frontier_pub_;
-        ros::Publisher voxel_pub_;
 };
 
 } // namespace ariitk::frontier_explorer
