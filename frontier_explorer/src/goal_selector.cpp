@@ -6,15 +6,26 @@
 
 namespace ariitk::frontier_explorer {
 
+FrontierComparator::FrontierComparator(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private) 
+    : nh_(nh)
+    , nh_private_(nh_private) {
+    nh_private_.getParam("min_frontier_size", min_size_);
+    nh_private_.getParam("clear_radius", clear_radius_);
+    ROS_INFO("%lf", clear_radius_);
+    odom_sub_ = nh_.subscribe("odometry", 1, &FrontierComparator::odometryCallback, this);
+}
+
 GoalSelector::GoalSelector(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
-    : evaluator_(nh, nh_private) {
-    nh_private.getParam("voxel_size", voxel_size_);
-    nh_private.getParam("visualize", visualize_);
-    nh_private.getParam("clear_radius", clear_radius_);
+    : nh_(nh)
+    , nh_private_(nh_private)
+    , evaluator_(nh, nh_private)
+    , comparator_(nh, nh_private) {
+    nh_private_.getParam("voxel_size", voxel_size_);
+    nh_private_.getParam("visualize", visualize_);
+    nh_private_.getParam("slice_level", slice_level_);
     
-    odom_sub_ = nh.subscribe("odometry", 1, &GoalSelector::odometryCallback, this);
-    goal_pub_ = nh_private.advertise<geometry_msgs::PoseStamped>("goal", 1);
-    active_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("active_frontiers", 1);
+    goal_pub_ = nh_private_.advertise<geometry_msgs::PoseStamped>("goal", 1);
+    active_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>("active_frontiers", 1);
 }
 
 void GoalSelector::run() {
@@ -64,9 +75,21 @@ void GoalSelector::visualizeActiveFrontiers() {
     active_pub_.publish(markers);
 }
 
+bool FrontierComparator::operator()(ariitk_planning_msgs::Frontier f1, ariitk_planning_msgs::Frontier f2) {
+    double cost1 = norm(f1.center, curr_pose_.position);
+    double cost2 = norm(f2.center, curr_pose_.position);
+    
+    double gain1 = (f1.num_points/min_size_)*(f1.num_points/min_size_);
+    double gain2 = (f2.num_points/min_size_)*(f2.num_points/min_size_);
+
+    if(cost1 < clear_radius_) cost1 = DBL_MAX;
+    else if(cost2 < clear_radius_) cost2 = DBL_MAX;
+    else return ((gain1 - cost1) > (gain2 - cost2));
+}
+
 void GoalSelector::scoreFrontiers(std::vector<ariitk_planning_msgs::Frontier>& frontiers) {
     if(frontiers.empty()) { return; }
-    std::sort(frontiers.begin(), frontiers.end(), GoalSelector::FrontierComparator(clear_radius_, curr_pose_.position));
+    std::sort(frontiers.begin(), frontiers.end(), comparator_);
 }
 
 void GoalSelector::getBestGoal() {
@@ -86,7 +109,7 @@ void GoalSelector::visualizeActiveGoal() {
     msg.header.frame_id = "world";
     msg.header.stamp = ros::Time::now();
     msg.pose.position = active_goal_.center;
-    msg.pose.position.z = curr_pose_.position.z;
+    msg.pose.position.z = slice_level_;
     goal_pub_.publish(msg);
 }
 
