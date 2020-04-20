@@ -16,6 +16,7 @@ SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
     voxblox_server_(nh_, nh_private_),
     skeleton_generator_() {
   constraints_.setParametersFromRos(nh_private_);
+  ROS_WARN("Global Planner: %lf", constraints_.robot_radius);
 
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("frame_id", frame_id_, frame_id_);
@@ -115,8 +116,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     ROS_ERROR("No free points near start pose, and start pose is occupied!");
     return false;
   }
-  start_pose.position_W = new_start_pos;
-  return false;
+    start_pose.position_W = new_start_pos;
   }
 
   voxblox::Point start_point =
