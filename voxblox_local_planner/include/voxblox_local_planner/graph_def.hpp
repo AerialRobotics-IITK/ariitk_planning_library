@@ -39,7 +39,7 @@ class GraphNode {
 };
 
 typedef GraphNode::Ptr Node;
-typedef std::list<Node> Graph;
-typedef std::vector<Node> Nodes;
+typedef std::vector<Node> Graph;
+// typedef std::vector<Node> Nodes;
 
 } // namespace ariitk::local_planner

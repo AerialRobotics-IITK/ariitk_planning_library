@@ -3,7 +3,8 @@
 #include <random>
 #include <ros/ros.h>
 #include <Eigen/Core>
-#include <voxblox/core/esdf_map.h>
+#include <voxblox_ros/esdf_server.h>
+#include <voxblox/core/tsdf_map.h>
 
 #include <voxblox_local_planner/ray_caster.hpp>
 #include <voxblox_local_planner/path_visualizer.hpp>
@@ -35,23 +36,23 @@ class PointSampler {
 
 class PathFinder {
     public:
-        PathFinder()
-            : sampler_() {} ;
-        void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
-        void setEsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { esdf_map_ptr_ = map_ptr; };
-        void setOrigin(const Eigen::Vector3d& origin) { origin_ = origin; }
+        PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
+        // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
+        // void setEsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { esdf_map_ptr_ = map_ptr; };
+        // void setTsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { tsdf_map_ptr_ = map_ptr; };
+        // void setOrigin(const Eigen::Vector3d& origin) { origin_ = origin; };
         void setRobotRadius(const double& robot_radius) { robot_radius_ = robot_radius; };
         void findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
         Path getBestPath() { return best_candidate_path_; };
         void visualizePaths();
 
     private:
-        Graph createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void createGraph();
         void pruneGraph(Graph& graph);
-        Paths searchPaths(const Graph& graph);
-        void traverseGraph(Nodes& visited);
+        void searchPaths(const uint& start_index, const uint& end_index);
+        Paths traverseGraph(const Graph& graph);
     
-        Nodes findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point);
+        // Nodes findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point);
         bool checkConnection(const Node& start, const Node& end, const Eigen::Vector3d& point);
         bool hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const double& threshold = 0.0);
         bool hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, Eigen::Vector3d& point, const double& threshold = 0.0);
@@ -60,6 +61,7 @@ class PathFinder {
         Path discretizePath(const Path& path, const uint& num_points);
         Path linearizePath(const Path& path);
         Path linearize(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        int getIndex(const Eigen::Vector3d& point);
 
         void trim(Paths& paths);
         void trimPath(Path& path, const uint& iterations = 1);
@@ -73,7 +75,9 @@ class PathFinder {
         Paths raw_paths_;
         Graph graph_;
 
-        voxblox::EsdfMap::Ptr esdf_map_ptr_;
+        voxblox::EsdfServer server_;
+
+        std::vector<Eigen::Vector3d> neighbor_voxels_;
         
         double robot_radius_;
         double voxel_size_;

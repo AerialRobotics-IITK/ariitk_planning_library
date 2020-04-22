@@ -3,7 +3,7 @@
 namespace ariitk::local_planner {
 
 void PointSampler::init(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    region_ = Eigen::Vector3d(1.0, 10.0, 1.0); // parametrize
+    region_ = Eigen::Vector3d(1.0, 1.0, 1.0); // parametrize
     region_(0) += 0.5 * (end - start).norm();
     translation_ = 0.5 * (start + end);
     
@@ -21,11 +21,12 @@ Eigen::Vector3d PointSampler::getSample() {
     return (rotation_ * point + translation_);
 }
 
-void PathFinder::init(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
-    CHECK_NOTNULL(esdf_map_ptr_);
+PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private) 
+    : sampler_()
+    , server_(nh, nh_private) {
     nh_private.getParam("robot_radius", robot_radius_);
     nh_private.getParam("visualize", visualize_);
-    voxel_size_ = double(esdf_map_ptr_->voxel_size());
+    voxel_size_ = double(server_.getEsdfMapPtr()->voxel_size());
     
     visualizer_.init(nh, nh_private);
 
@@ -34,145 +35,384 @@ void PathFinder::init(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
         visualizer_.createPublisher("graph");
         visualizer_.createPublisher("best_path");
         visualizer_.createPublisher("unique_paths");
+        visualizer_.createPublisher("start");
+        visualizer_.createPublisher("end");
     }
 
-    // Eigen::Vector3d origin = esdf_map_ptr_->getOrigin();
-    Eigen::Vector3d offset = Eigen::Vector3d(0.5, 0.5, 0.5) - origin_ / voxel_size_; // why?
-    caster_.setOffset(offset);
+    auto vs = voxel_size_;
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, 0));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, -vs));
+    neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, -vs));
 }
+
+// void PathFinder::init(ros::NodeHandle& nh, ros::NodeHandle& nh_private) {
+//     CHECK_NOTNULL(esdf_map_ptr_);
+
+//     // Eigen::Vector3d origin = esdf_map_ptr_->getOrigin();
+//     // Eigen::Vector3d offset = Eigen::Vector3d(0.5, 0.5, 0.5) - origin_ / voxel_size_; // why?
+//     // caster_.setOffset(offset);
+// }
 
 void PathFinder::findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt) {
-    graph_ = createGraph(start_pt, end_pt);
-    Paths raw_paths = searchPaths(graph_);
-    visualizer_.visualizePaths("raw_paths", raw_paths, "world", PathVisualizer::ColorType::TEAL);
-    trim(raw_paths);
-    Paths unique_paths = removeDuplicates(raw_paths);
-    best_candidate_path_ = evaluatePaths(unique_paths);
-    visualizer_.visualizePaths("unique_paths", unique_paths, "world", PathVisualizer::ColorType::GREEN);
+    createGraph();
+    visualizer_.visualizeGraph("graph", graph_);
+    // ROS_WARN_STREAM("CHECK2 " << graph_.size());
+
+    int start = getIndex(start_pt);
+    int end = getIndex(end_pt);
+
+    // ROS_WARN_STREAM("CJECL" << start << " " << end);
+    // visualizer_.visualizePoint("start", graph_[start]->getPosition());
+    // visualizer_.visualizePoint("end", graph_[end]->getPosition());
+
+    searchPaths(start, end);
+    // ROS_WARN_STREAM("CHECK3 " << raw_paths_.size());
+    visualizer_.visualizePaths("raw_paths", raw_paths_, "world", PathVisualizer::ColorType::TEAL);
+    // trim(raw_paths);
+    // Paths unique_paths = removeDuplicates(raw_paths);
+    // best_candidate_path_ = evaluatePaths(unique_paths);
+    best_candidate_path_ = raw_paths_[0];
+    visualizer_.visualizePath("best_path", best_candidate_path_, "world", PathVisualizer::ColorType::GREEN);
 }
 
-Graph PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    CHECK_NOTNULL(esdf_map_ptr_);
-    Graph graph;
+void PathFinder::createGraph() {
+    // CHECK_NOTNULL(esdf_map_ptr_);
+    // CHECK_NOTNULL(tsdf_map_ptr_);
 
-    Node start_node = Node(new GraphNode(start, GraphNode::NodeType::GUARD, 0));
-    Node end_node = Node(new GraphNode(end, GraphNode::NodeType::GUARD, 1));
-    
-    graph.push_back(start_node);
-    graph.push_back(end_node);
+    uint node_id = 0;
+    size_t vps = server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
+    size_t num_voxels_per_block = vps * vps * vps;
 
-    sampler_.init(start, end);
-
-    uint node_id = 1;
-    uint num_sample = 0;
-    double sample_time = 0.0;
-
-    double max_sample_time = 10.0; // privatize
-    uint max_samples = 1000; // privatize
-    
-    ros::Time last_sample_time = ros::Time::now();
-    while(sample_time < max_sample_time && num_sample++ < max_samples) {
-        Eigen::Vector3d sample = sampler_.getSample();
-        double distance = getMapDistance(sample);
-        
-        if(distance <= robot_radius_) {
-            sample_time += (ros::Time::now() - last_sample_time).toSec();
-            last_sample_time = ros::Time::now();
-            continue;
-        }
-
-        Nodes visible_guards = findVisibleGuards(graph, sample);
-        if(visible_guards.size() == 0) {
-            Node guard = Node(new GraphNode(sample, GraphNode::NodeType::GUARD, ++node_id));
-            graph.push_back(guard);
-        } else if(visible_guards.size() == 2) {
-            bool success = checkConnection(visible_guards[0], visible_guards[1], sample); // TODO
-            if(success) {
-                sample_time += (ros::Time::now() - last_sample_time).toSec();
-                last_sample_time = ros::Time::now();
-                continue;
-            } else {
-                Node connector = Node(new GraphNode(sample, GraphNode::NodeType::CONNECTOR, ++node_id));
-                graph.push_back(connector);
-                visible_guards[0]->addNeighbour(connector);
-                visible_guards[1]->addNeighbour(connector);
-                connector->addNeighbour(visible_guards[0]);
-                connector->addNeighbour(visible_guards[1]);
+    voxblox::BlockIndexList blocks;
+    server_.getTsdfMapPtr()->getTsdfLayerPtr()->getAllUpdatedBlocks(voxblox::Update::kEsdf, &blocks);
+    for(const auto& index : blocks) {
+        voxblox::Block<voxblox::TsdfVoxel>& block = server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
+        for(size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
+            Eigen::Vector3d point = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
+            voxblox::TsdfVoxel* voxel_ptr = block.getVoxelPtrByCoordinates(point.cast<voxblox::FloatingPoint>());
+            double point_dis = getMapDistance(point);
+            
+            if(voxel_ptr && point_dis > robot_radius_){
+                Node node = Node(new GraphNode(point, GraphNode::NodeType::GUARD, node_id++));
+                graph_.push_back(node);
+                
+                for(auto& neighbor : neighbor_voxels_) {
+                    Eigen::Vector3d pos = point + neighbor;
+                    double distance = getMapDistance(pos);
+                    voxblox::Point voxblox_point(pos.x(), pos.y(), pos.z());
+                    voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(voxblox_point);
+                    
+                    if(block_ptr) {
+                        voxblox::TsdfVoxel* tsdf_voxel_ptr = block_ptr->getVoxelPtrByCoordinates(voxblox_point);
+                        if(tsdf_voxel_ptr && distance > robot_radius_) {
+                            Node connector = Node(new GraphNode(pos, GraphNode::NodeType::CONNECTOR, node_id++));
+                            bool present = false;
+                            for(auto& point : graph_) {
+                                if((point->getPosition() - connector->getPosition()).norm() < voxel_size_) {
+                                    present = true;
+                                    connector = point;
+                                    node_id--;
+                                    break;
+                                }
+                            }
+                            
+                            node->addNeighbour(connector);
+                            connector->addNeighbour(node);
+                            if(present) continue;   
+                            graph_.push_back(connector);
+                        }
+                    }
+                }
             }
-        } // else ?
-
-        sample_time += (ros::Time::now() - last_sample_time).toSec();
-        last_sample_time = ros::Time::now();
+        }
     }
+    // ROS_WARN_STREAM("CHECKp " << graph_.size());
 
-    // pruneGraph(graph);
-    return graph;
+    // pruneGraph(graph_);
+    // sampler_.init(start, end);
+
+    // uint num_sample = 0;
+    // double sample_time = 0.0;
+
+    // double max_sample_time = 10.0; // privatize
+    // uint max_samples = 1000; // privatize
+    
+    // ros::Time last_sample_time = ros::Time::now();
+    // while(sample_time < max_sample_time && num_sample++ < max_samples) {
+    //     Eigen::Vector3d sample = sampler_.getSample();
+
+    //     double distance = getMapDistance(sample);
+    //     // ROS_WARN_STREAM(distance);
+        
+    //     if(distance <= robot_radius_) {
+    //         sample_time += (ros::Time::now() - last_sample_time).toSec();
+    //         last_sample_time = ros::Time::now();
+    //         continue;
+    //     }
+    //     ROS_WARN_STREAM("sample: " << sample.x() << " " << sample.y() << " " << sample.z());
+
+    //     Nodes visible_guards = findVisibleGuards(graph, sample);
+    //     if(visible_guards.size() == 0) {
+    //         Node guard = Node(new GraphNode(sample, GraphNode::NodeType::GUARD, ++node_id));
+    //         graph.push_back(guard);
+    //     } else if(visible_guards.size() == 2) {
+    //         bool success = checkConnection(visible_guards[0], visible_guards[1], sample); // TODO
+    //         if(success) {
+    //             sample_time += (ros::Time::now() - last_sample_time).toSec();
+    //             last_sample_time = ros::Time::now();
+    //             continue;
+    //         } else {
+    //             Node connector = Node(new GraphNode(sample, GraphNode::NodeType::CONNECTOR, ++node_id));
+    //             graph.push_back(connector);
+    //             visible_guards[0]->addNeighbour(connector);
+    //             visible_guards[1]->addNeighbour(connector);
+    //             connector->addNeighbour(visible_guards[0]);
+    //             connector->addNeighbour(visible_guards[1]);
+    //         }
+    //     } // else ?
+
+    //     sample_time += (ros::Time::now() - last_sample_time).toSec();
+    //     last_sample_time = ros::Time::now();
+
+    // }
+
+    // return graph;
 }
 
-Paths PathFinder::searchPaths(const Graph& graph) {
+int PathFinder::getIndex(const Eigen::Vector3d& point) {
+    const double angle_step = 0.1;
+    const size_t max_iterations = 10;
+    double distance = 0.0;
+
+    for(size_t step = 1; step <= max_iterations; step++) {
+        for(double angle = -M_PI; angle < M_PI; angle += angle_step) {
+            Eigen::Vector3d final_pos = point + Eigen::Vector3d(cos(angle), sin(angle), 0) * step * voxel_size_;
+            if(getMapDistance(final_pos) >= robot_radius_) {
+                // ROS_WARN_STREAM("BRU" << final_pos.x() << " " << final_pos.y() << " " << final_pos.z());
+                // ROS_WARN_STREAM("INFO");
+                for(auto& node : graph_) {
+                    if((node->getPosition() - final_pos).norm() < voxel_size_) {
+                        return node->getID();
+                    }
+                }
+                // ROS_WARN_STREAM("INFO1");
+                
+                uint node_id = graph_.size();
+                Node new_node = Node(new GraphNode(final_pos, GraphNode::NodeType::GUARD, node_id++));
+                graph_.push_back(new_node);
+                
+                // ROS_WARN_STREAM("INFO2");
+
+                for(auto& neighbor : neighbor_voxels_) {
+                    Eigen::Vector3d pos = final_pos + neighbor;
+                    double distance = getMapDistance(pos);
+                    voxblox::Point voxblox_point(pos.x(), pos.y(), pos.z());
+                    voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(voxblox_point);
+                // ROS_WARN_STREAM("INFO4");
+                            
+                    if(block_ptr) {
+                        voxblox::TsdfVoxel* tsdf_voxel_ptr = block_ptr->getVoxelPtrByCoordinates(voxblox_point);
+                        if(tsdf_voxel_ptr && distance > robot_radius_) {
+                            Node connector = Node(new GraphNode(pos, GraphNode::NodeType::CONNECTOR, node_id++));
+                            bool present = false;
+                            for(auto& point : graph_) {
+                                if((point->getPosition() - connector->getPosition()).norm() < voxel_size_) {
+                                    present = true;
+                                    connector = point;
+                                    break;
+                                }
+                            }
+                            // ROS_WARN_STREAM("INFO3");
+                            
+                            new_node->addNeighbour(connector);
+                            connector->addNeighbour(new_node);
+                            if(present) continue;   
+                            graph_.push_back(connector);
+                        }
+                    }
+                }
+                // ROS_WARN_STREAM("INF5");
+                
+                return new_node->getID();
+            }
+        }
+    }
+  return -1;
+}
+
+void PathFinder::searchPaths(const uint& start_index, const uint& end_index) {
+    if(graph_.empty()) { return; }
     raw_paths_.clear();
 
-    Nodes visited;
-    visited.push_back(graph.front());
-    traverseGraph(visited);
+    std::vector<bool> visited(graph_.size(), false);
+    std::map<uint, uint> parent_map;
+    std::stack<uint> travel_stack;
+        
+    travel_stack.push(start_index);
+    // Path dfs_path;
+    while(!travel_stack.empty()) {
+        uint curr_index = travel_stack.top();
+        travel_stack.pop();
 
-    int min_size = INT_MAX, max_size = 0;
-    int max_raw_paths = 300; // parametrize
-    std::vector<std::vector<int>> index_map(max_raw_paths);
-    for(int i = 0; i < raw_paths_.size(); i++) {
-        if(int(raw_paths_[i].size()) > max_size) { max_size = raw_paths_[i].size(); }
-        if(int(raw_paths_[i].size()) < min_size) { min_size = raw_paths_[i].size(); }
-        index_map[int(raw_paths_[i].size())].push_back(i);
-    }
+        ROS_WARN_STREAM(curr_index);
+        // dfs_path.push_back(graph_[curr_index]->getPosition());
+        if(curr_index == end_index) {
+            Path curr_path;
+            while(parent_map.count(curr_index)) {
+                curr_path.push_back(graph_[curr_index]->getPosition());
+                // visited[curr_index] = false;
+                curr_index = parent_map[curr_index];
+                // parent.erase(eraser);
+                // ROS_WARN_STREAM("TRAV" << curr_index);
+            }
+            std::reverse(curr_path.begin(), curr_path.end());
+            // ROS_WARN_STREAM("CHECKE" << curr_path.size());
+            raw_paths_.push_back(curr_path);
+            // return;
+            // visited[end_index] = false;
+        }
 
-    Paths filter_paths;
-    int max_filter_paths = 25; // parametrize
-    for(int i = min_size; i <= max_size; i++) {
-        bool reach_max = false;
-        for(int j = 0; j < index_map[i].size(); j++) {
-            filter_paths.push_back(raw_paths_[index_map[i][j]]);
-            if(filter_paths.size() >= max_filter_paths) {
-                reach_max = true;
-                break;
+        if(!visited[curr_index]) visited[curr_index] = true;    
+
+        for(auto& neigh : graph_[curr_index]->getNeighbours()) {
+            if(!visited[neigh->getID()]) {
+                travel_stack.push(neigh->getID());
+                // if(parent.count(neigh->getID())) parent.erase(neigh->getID());
+                parent_map.insert(std::make_pair(neigh->getID(), curr_index));
             }
         }
-        if(reach_max) break;
     }
+    // int min_size = INT_MAX, max_size = 0;
+    // int max_raw_paths = 300; // parametrize
+    // std::vector<std::vector<int>> index_map(max_raw_paths);
+    // for(int i = 0; i < raw_paths_.size(); i++) {
+    //     if(int(raw_paths_[i].size()) > max_size) { max_size = raw_paths_[i].size(); }
+    //     if(int(raw_paths_[i].size()) < min_size) { min_size = raw_paths_[i].size(); }
+    //     index_map[int(raw_paths_[i].size())].push_back(i);
+    // }
 
-    raw_paths_ = filter_paths;
-    return filter_paths;
+    // Paths filter_paths;
+    // int max_filter_paths = 25; // parametrize
+    // for(int i = min_size; i <= max_size; i++) {
+    //     bool reach_max = false;
+    //     for(int j = 0; j < index_map[i].size(); j++) {
+    //         filter_paths.push_back(raw_paths_[index_map[i][j]]);
+    //         if(filter_paths.size() >= max_filter_paths) {
+    //             reach_max = true;
+    //             break;
+    //         }
+    //     }
+    //     if(reach_max) break;
+    // }
+
+    // raw_paths_ = filter_paths;
+    // raw_paths_.push_back(dfs_path);
+    ROS_WARN_STREAM("CHECK S " << raw_paths_.size());
+    // return raw_paths_;
 }
 
-void PathFinder::traverseGraph(Nodes& visited) {
-    Node curr = visited.back();
-    for(auto& node : curr->getNeighbours()) {
-        if(node->getID() == 1) {
-            Path path;
-            for(auto& vis : visited) { path.push_back(vis->getPosition()); }
-            path.push_back(node->getPosition());
-            raw_paths_.push_back(path);
-            // add memory limit max_num_paths
-            break;
-        }
-    }
+Paths PathFinder::traverseGraph(const Graph& graph) {
+    Paths raw_paths;
 
-    for(auto& node : curr->getNeighbours()) {
-        if(node->getID() == 1) continue;
+    for(auto& node : graph) {
+        std::vector<bool> visited(graph.size(), false);
+        std::map<int, Node> parent;
+        std::stack<Node> travel_stack;
+        
+        travel_stack.push(node);
+        while(!travel_stack.empty()) {
+            Node curr = travel_stack.top();
+            travel_stack.pop();
 
-        bool revisit = false;
-        for(auto& vis : visited) {
-            if(node->getID() == vis->getID()) {
-                revisit = true;
-                break;
+            ROS_WARN_STREAM(curr->getID());
+            if(curr->getID() == graph.back()->getID()) {
+                Path curr_path;
+                while(parent.count(curr->getID())) {
+                    curr_path.push_back(curr->getPosition());
+                    uint eraser = curr->getID();
+                    curr = parent[eraser];
+                    // parent.erase(eraser);
+                    ROS_WARN_STREAM("TRAV" << curr->getID());
+                }
+                std::reverse(curr_path.begin(), curr_path.end());
+                ROS_WARN_STREAM("CHECKE" << curr_path.size());
+                raw_paths.push_back(curr_path);
+                // visited[curr->getID()] = false;
+            }
+
+            if(!visited[curr->getID()]) visited[curr->getID()] = true;
+
+            for(auto& neigh : curr->getNeighbours()) {
+                if(!visited[neigh->getID()]) {
+                    travel_stack.push(neigh);
+                    // if(parent.count(neigh->getID())) parent.erase(neigh->getID());
+                    parent.insert(std::make_pair(neigh->getID(), curr));
+                }
             }
         }
-        if(revisit) continue;
-
-        visited.push_back(node);
-        traverseGraph(visited); 
-        // memory limits
-        visited.pop_back();
     }
+    ROS_WARN_STREAM("CHECKIN " << raw_paths.size());
+    return raw_paths;
+    //     Node curr = visited.back();
+    // for(auto& node : curr->getNeighbours()) {
+    //     if(node->getID() == 1) {
+    //         Path path;
+    //         for(auto& vis : visited) { path.push_back(vis->getPosition()); }
+    //         path.push_back(node->getPosition());
+    //         raw_paths_.push_back(path);
+    //          if (raw_paths_.size() >= 100) return;
+    //         // add memory limit max_num_paths
+    //         ROS_WARN("CHECK") << raw_paths_.size());
+    //         break;
+    //     }
+    // }
+
+    //         ROS_WARN("CHECK2");
+    // for(auto& node : curr->getNeighbours()) {
+    //     ROS_WARN("CHECK3");
+        
+    //     if(node->getID() == 1) continue;
+
+
+    //     bool revisit = false;
+    //     for(auto& vis : visited) {
+    //         if(node->getID() == vis->getID()) {
+    //             revisit = true;
+    //         ROS_WARN("CHECKe");
+
+    //             break;
+    //         }
+    //     }
+    //     if(revisit) continue;
+
+    //     visited.push_back(node);
+    //     traverseGraph(visited); 
+    //     if (raw_paths_.size() >= 100) return;
+    //     visited.pop_back();
+    // }
 }
 
 void PathFinder::trim(Paths& paths) {
@@ -259,42 +499,42 @@ Path PathFinder::evaluatePaths(const Paths& paths) {
 }
 
 double PathFinder::getMapDistance(const Eigen::Vector3d& point) {
-    CHECK(esdf_map_ptr_);
+    // CHECK(esdf_map_ptr_);
     double distance = 0.0;
-    if (!esdf_map_ptr_->getDistanceAtPosition(point, &distance)) { return 0.0; }
+    if (!server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) { return 0.0; }
     return distance;
 }
 
 bool PathFinder::getMapGradient(const Eigen::Vector3d& point, Eigen::Vector3d& gradient) {
-    CHECK(esdf_map_ptr_);
+    // CHECK(esdf_map_ptr_);
     double distance;
-    if (!esdf_map_ptr_->getDistanceAndGradientAtPosition(point, &distance, &gradient)) { return false; }
+    if (!server_.getEsdfMapPtr()->getDistanceAndGradientAtPosition(point, &distance, &gradient)) { return false; }
     return true;
 }
 
 void PathFinder::pruneGraph(Graph & graph) {
     for(auto it = graph.begin(); it != graph.end(); it++) {
         if(graph.size() <= 2) { return; }
-        if((*it)->getID() <= 1 || (*it)->getNumNeighbours() > 1) { continue; }
+        if((*it)->getNumNeighbours() > 1) { continue; }
         for(auto& node : graph) { node->deleteNeighbour((*it)->getID()); }
         graph.erase(it);
         it = graph.begin();
     }
 }
 
-Nodes PathFinder::findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point) {
-    Nodes guards;
-    int num_visible = 0;
+// Nodes PathFinder::findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point) {
+//     Nodes guards;
+//     int num_visible = 0;
 
-    for(auto& node : graph) {
-        if(node->getType() == GraphNode::NodeType::CONNECTOR) continue;
-        if(hasLineOfSight(point, node->getPosition())) {
-            guards.push_back(node);
-            if(++num_visible > 2) { break; }
-        }
-    }
-    return guards;
-}
+//     for(auto& node : graph) {
+//         if(node->getType() == GraphNode::NodeType::CONNECTOR) continue;
+//         if(hasLineOfSight(point, node->getPosition())) {
+//             guards.push_back(node);
+//             if(++num_visible > 2) { break; }
+//         }
+//     }
+//     return guards;
+// }
 
 bool PathFinder::hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const double& threshold) {
     Eigen::Vector3d ray_pt;

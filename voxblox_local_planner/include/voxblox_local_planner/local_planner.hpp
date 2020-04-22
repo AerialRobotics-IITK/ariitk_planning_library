@@ -4,6 +4,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/Odometry.h>
 #include <voxblox_ros/esdf_server.h> 
+#include <Eigen/Eigen>
 
 #include <voxblox_local_planner/path_finder.hpp>
 
@@ -20,11 +21,13 @@ class LocalPlanner {
         void odometryCallback(const nav_msgs::Odometry& msg){ odometry_ = msg; }
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
+        void setYawFacing(geometry_msgs::PoseStamped& msg);
 
-        voxblox::EsdfServer server_;
+        // voxblox::EsdfServer server_;
         PathFinder pathfinder_;
 
         bool visualize_;
+        double last_yaw_;
 
         ros::Publisher command_pub_;
 

@@ -56,9 +56,9 @@
 		</node>
 	</group>
 	
-	<include file="$(find simulator)/launch/voxblox_server.launch">
-		<arg name="mav_name" value="$(arg mav_name)"/>
-	</include>
+	<!-- <include file="$(find simulator)/launch/voxblox_server.launch"> -->
+		<!-- <arg name="mav_name" value="$(arg mav_name)"/> -->
+	<!-- </include> -->
 
 	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find simulator)/rviz/single_robot_planner.rviz" respawn="true"/>
 
