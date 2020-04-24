@@ -3,7 +3,7 @@
 namespace ariitk::local_planner {
 
 void PointSampler::init(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    region_ = Eigen::Vector3d(0.5, 1.0, 0.5); // parametrize
+    region_ = Eigen::Vector3d(0.5, 1.0, 0.5);
     region_(0) += 0.5 * (end - start).norm();
     translation_ = 0.5 * (start + end);
 
@@ -62,7 +62,8 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     graph_.clear();
     sampler_.init(start, end);
 
-    uint max_samples = 1000;    // use density based
+    uint density = 50; // parametrize
+    uint max_samples = density * (start - end).norm();
     uint num_sample = 0;
 
     graph_.push_back(Node(new GraphNode(start, 0)));
