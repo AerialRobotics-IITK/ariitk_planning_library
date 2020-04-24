@@ -3,7 +3,7 @@
 namespace ariitk::local_planner {
 
 void PointSampler::init(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    region_ = Eigen::Vector3d(0.5, 2.0, 0.5); // parametrize
+    region_ = Eigen::Vector3d(0.5, 1.0, 0.5); // parametrize
     region_(0) += 0.5 * (end - start).norm();
     translation_ = 0.5 * (start + end);
     
@@ -320,65 +320,73 @@ void PathFinder::searchPaths(const uint& start_index, const uint& end_index) {
 
     // std::vector<bool> visited(graph_.size(), false);
     // std::stack<uint> travel_stack;
-    typedef std::pair<uint, uint> Depth;
+    Eigen::Vector3d start_pos = graph_[start_index]->getPosition();
+    typedef std::pair<double, uint> f_score_map;
 
-    std::priority_queue<Depth, std::vector<Depth>, std::greater<Depth>> queue;
-    std::vector<uint> dist(graph_.size(), INT_MAX);
+    std::priority_queue<f_score_map, std::vector<f_score_map>, std::greater<f_score_map>> open_set;
+    std::vector<double> g_score(graph_.size(), DBL_MAX);
     std::vector<uint> parent(graph_.size(), INT_MAX);
-    queue.push(std::make_pair(0, start_index));
-    dist[start_index] = 0;
+    std::map<uint, bool> closed_set;
+
+    open_set.push(std::make_pair(0.0, start_index));
+    g_score[start_index] = 0.0;
 
     // travel_stack.push(start_index);
     Path dfs_path;
-    while(!queue.empty()) {
-        uint curr_index = queue.top().second;
-        queue.pop();
+    while(!open_set.empty()) {
+        uint curr_index = open_set.top().second;
+        Eigen::Vector3d curr_pos = graph_[curr_index]->getPosition();
+        open_set.pop();
+        // closed_set.insert(std::make_pair(curr_index, True));
 
         // ROS_WARN_STREAM(curr_index);
         dfs_path.push_back(graph_[curr_index]->getPosition());
-        // if(curr_index == end_index) {
-        //     Path curr_path;
-        //     while(parent_map.count(curr_index)) {
-        //         curr_path.push_back(graph_[curr_index]->getPosition());
+        if(curr_index == end_index) {
+            Path curr_path;
+            while(parent[curr_index] != INT_MAX) {
+                curr_path.push_back(graph_[curr_index]->getPosition());
         //         // visited[curr_index] = false;
-        //         curr_index = parent_map[curr_index];
+                curr_index = parent[curr_index];
         //         // parent.erase(eraser);
         //         // ROS_WARN_STREAM("TRAV" << curr_index);
-        //     }
-        //     std::reverse(curr_path.begin(), curr_path.end());
+            }
+            std::reverse(curr_path.begin(), curr_path.end());
         //     // ROS_WARN_STREAM("CHECKE" << curr_path.size());
-        //     raw_paths_.push_back(curr_path);
-        //     // return;
+            raw_paths_.push_back(curr_path);
+            return;
         //     // visited[end_index] = false;
-        // }
+        }
 
         // if(!visited[curr_index]) visited[curr_index] = true;    
 
         for(auto& neigh : graph_[curr_index]->getNeighbours()) {
             uint neigh_index = neigh->getID();
-            if(dist[neigh_index] > dist[curr_index] + 1) {
+            Eigen::Vector3d neigh_pos = neigh->getPosition();
+
+            double score = g_score[curr_index] + (neigh_pos - curr_pos).norm();
+            if(score < g_score[neigh_index]) {
             // if(!visited[neigh->getID()]) {
-                dist[neigh_index] = dist[curr_index] + 1;
-                queue.push(std::make_pair(dist[neigh_index], neigh_index));
+                g_score[neigh_index] = score;
                 // if(parent.count(neigh->getID())) parent.erase(neigh->getID());
                 // parent_map.insert(std::make_pair(neigh_index, curr_index));
                 parent[neigh_index] = curr_index;
+                open_set.push(std::make_pair(score + (neigh_pos - start_pos).norm(), neigh_index));
             }
         }
     }
 
-    Path curr_path;
-    uint curr_index = end_index;
-    while(parent[curr_index] != INT_MAX) {
-        curr_path.push_back(graph_[curr_index]->getPosition());
-        //         // visited[curr_index] = false;
-        curr_index = parent[curr_index];
-        //         // parent.erase(eraser);
-        // ROS_WARN_STREAM("TRAV" << curr_index);
-    }
-    std::reverse(curr_path.begin(), curr_path.end());
-    ROS_WARN_STREAM("CHECKE" << curr_path.size());
-    if(curr_path.size()) raw_paths_.push_back(curr_path);
+    // Path curr_path;
+    // uint curr_index = end_index;
+    // while(parent[curr_index] != INT_MAX) {
+    //     curr_path.push_back(graph_[curr_index]->getPosition());
+    //     //         // visited[curr_index] = false;
+    //     curr_index = parent[curr_index];
+    //     //         // parent.erase(eraser);
+    //     // ROS_WARN_STREAM("TRAV" << curr_index);
+    // }
+    // std::reverse(curr_path.begin(), curr_path.end());
+    // ROS_WARN_STREAM("CHECKE" << curr_path.size());
+    // if(curr_path.size()) raw_paths_.push_back(curr_path);
         //     // return;
         //     // visited[end_index] = false;
 
