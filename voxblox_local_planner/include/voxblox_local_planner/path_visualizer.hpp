@@ -47,6 +47,9 @@ class PathVisualizer {
                         const ColorType& vertex_color = ColorType::ORANGE, const ColorType& edge_color = ColorType::BLUE, const double& size_factor = 0.5);
         void visualizePoint(const std::string& topic_name, const Eigen::Vector3d& point, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
+        void visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& point, 
+                       const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
+
     private:
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_; 

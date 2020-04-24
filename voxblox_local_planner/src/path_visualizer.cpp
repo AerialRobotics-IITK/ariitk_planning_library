@@ -40,7 +40,41 @@ void PathVisualizer::visualizePath(const std::string& topic_name, const std::vec
     marker.action = visualization_msgs::Marker::ADD;
     marker.color = color_map_[color];
 
-    for(auto& point : path) {
+    geometry_msgs::Point prev_center;
+    prev_center.x = path[0].x();
+    prev_center.y = path[0].y();
+    prev_center.z = path[0].z();
+
+    for(uint i = 1; i < path.size(); i++) {
+        marker.points.push_back(prev_center);
+        geometry_msgs::Point center;
+        center.x = path[i].x();
+        center.y = path[i].y();
+        center.z = path[i].z();
+        marker.points.push_back(center);
+        prev_center = center;
+    }
+    
+    visualization_msgs::MarkerArray markers;
+    markers.markers.push_back(marker);
+    publisher_map_[topic_name].publish(markers);    // protect this 
+}
+
+
+void PathVisualizer::visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
+                       const std::string& frame_id, const ColorType& color, const double& size_factor) {
+    
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = topic_name;
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::SPHERE_LIST;
+    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * size_factor;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.color = color_map_[color];
+
+    for(auto& point : points) {
         geometry_msgs::Point center;
         center.x = point.x();
         center.y = point.y();
@@ -66,7 +100,7 @@ void PathVisualizer::visualizePaths(const std::string& topic_name, const std::ve
         marker.ns = topic_name + "_" + std::to_string(++path_seq);
         marker.id = path_seq;
         marker.type = visualization_msgs::Marker::LINE_LIST;
-        marker.scale.x = marker.scale.y = marker.scale.z = voxel_size_ * size_factor;
+        marker.scale.x = marker.scale.y = marker.scale.z = 0.01;
         marker.action = visualization_msgs::Marker::ADD;
         marker.color = color_map_[color];
 

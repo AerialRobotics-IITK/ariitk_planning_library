@@ -22,12 +22,17 @@ class LocalPlanner {
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
         void setYawFacing(geometry_msgs::PoseStamped& msg);
+        bool needReplan();
+        void replan();
 
         // voxblox::EsdfServer server_;
+        Path waypoints_;
+        uint curr_index_;
         PathFinder pathfinder_;
 
         bool visualize_;
         double last_yaw_;
+        double robot_radius_;
 
         ros::Publisher command_pub_;
 

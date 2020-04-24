@@ -44,10 +44,12 @@ class PathFinder {
         void setRobotRadius(const double& robot_radius) { robot_radius_ = robot_radius; };
         void findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
         Path getBestPath() { return best_candidate_path_; };
+        double getMapDistance(const Eigen::Vector3d& point);
         void visualizePaths();
 
     private:
         void createGraph();
+        void createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void pruneGraph(Graph& graph);
         void searchPaths(const uint& start_index, const uint& end_index);
         Paths traverseGraph(const Graph& graph);
@@ -68,12 +70,13 @@ class PathFinder {
         Paths removeDuplicates(Paths& paths);
         Path evaluatePaths(const Paths& paths);
 
-        double getMapDistance(const Eigen::Vector3d& point);
         bool getMapGradient(const Eigen::Vector3d& point, Eigen::Vector3d& gradient);
 
         Path best_candidate_path_;
         Paths raw_paths_;
+
         Graph graph_;
+        RTree tree_;
 
         voxblox::EsdfServer server_;
 
