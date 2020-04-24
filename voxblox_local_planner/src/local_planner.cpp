@@ -6,8 +6,6 @@ namespace ariitk::local_planner {
 LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private) 
     : pathfinder_(nh, nh_private) 
     , last_yaw_(0) {
-    // pathfinder_.setEsdfMapPtr(server_.getEsdfMapPtr());
-    // pathfinder_.init(nh, nh_private);
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("robot_radius", robot_radius_);
 
@@ -30,13 +28,11 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 
     pathfinder_.findBestPath(start_odom.position_W, waypoint.position_W);
     waypoints_ = pathfinder_.getBestPath();
-    // if(visualize_) { pathfinder_.1visualizePaths(); }
     ros::Rate loop_rate(10);
 
     curr_index_ = 0;
     while(ros::ok() && waypoints_.size() == 0) {
         ros::spinOnce();
-        ROS_WARN_STREAM("NOSDJ");
         replan(start_odom.position_W, waypoint.position_W);
         loop_rate.sleep();
     }
@@ -44,27 +40,31 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     for(curr_index_ = 0; curr_index_ < waypoints_.size(); curr_index_++) {
         geometry_msgs::PoseStamped msg;
         msg.header.stamp = ros::Time::now();
+
         msg.pose.position.x = waypoints_[curr_index_].x();
         msg.pose.position.y = waypoints_[curr_index_].y();
         msg.pose.position.z = waypoints_[curr_index_].z();
+
         setYawFacing(msg);
         command_pub_.publish(msg);
+
         while(ros::ok() && norm(odometry_.pose.pose.position, msg.pose.position) > 0.2) {
             ros::spinOnce();
             Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
+            
             Eigen::Vector3d frontier = curr_pos + (waypoints_[curr_index_] - curr_pos).normalized() * robot_radius_;
             visualizer_.visualizePoint("frontier", frontier, "world", PathVisualizer::ColorType::RED, 1);
+            
             if(pathfinder_.getMapDistance(frontier) < robot_radius_) {
-                ROS_WARN_STREAM("SDHJSD");
                 replan(waypoints_[curr_index_], waypoints_.back());
             }
+            
             loop_rate.sleep();
         }
     }
 }
 
 void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    // if(curr_index_ >= waypoints_.size() - 1) { return; }
     pathfinder_.findBestPath(start, end);
     waypoints_ = pathfinder_.getBestPath();
     ros::Rate loop_rate(10);
@@ -72,17 +72,11 @@ void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& e
     while(ros::ok() && waypoints_.size() == 0) {
         ros::spinOnce();
         pathfinder_.findBestPath(start, end);
-        ROS_WARN_STREAM("BRUHH");
         waypoints_ = pathfinder_.getBestPath();
         loop_rate.sleep();
     }
-    curr_index_ = 0;
-    
-    // if(pathfinder_.getMapDistance(waypoints_[curr_index_ + 2]) < robot_radius_) { // assuming small waypts.
-        // ROS_WARN_STREAM("Replanning for waypt" << curr_index_ + 1);
-    // }
 
-    // return;
+    curr_index_ = 0;
 }
 
 void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
@@ -98,12 +92,14 @@ void LocalPlanner::setYawFacing(geometry_msgs::PoseStamped& msg) {
     geometry_msgs::PoseStamped odom_msg;
     odom_msg.header.stamp = ros::Time::now();
     odom_msg.pose = odometry_.pose.pose;
+   
     mav_msgs::EigenTrajectoryPoint curr_pose, facing_pose;
     mav_msgs::eigenTrajectoryPointFromPoseMsg(odom_msg, &curr_pose);
     mav_msgs::eigenTrajectoryPointFromPoseMsg(msg, &facing_pose);
+   
     Eigen::Vector3d heading = facing_pose.position_W - curr_pose.position_W;
     
-    double desired_yaw;
+    double desired_yaw = 0.0;
     if (std::fabs(heading.x()) > 1e-4 || std::fabs(heading.y()) > 1e-4) {
         desired_yaw = std::atan2(heading.y(), heading.x());
     }
@@ -115,17 +111,9 @@ void LocalPlanner::setYawFacing(geometry_msgs::PoseStamped& msg) {
         yaw_mod -= 2 * M_PI;
     }
 
-    double yaw_rate_max = M_PI/4.0;
-    double sampling_dt = 0.01;
-
-    // if (std::fabs(yaw_mod) > yaw_rate_max * sampling_dt) {
-        // double yaw_direction = yaw_mod > 0.0 ? 1.0 : -1.0;
-        // desired_yaw = last_yaw_ + yaw_direction * yaw_rate_max * sampling_dt;
-    // }
     last_yaw_ = desired_yaw;
 
     Eigen::Quaterniond quat = Eigen::Quaterniond(Eigen::AngleAxisd(desired_yaw, Eigen::Vector3d::UnitZ()));
-    // ROS_WARN_STREAM(desired_yaw);
     msg.pose.orientation.w = quat.w();
     msg.pose.orientation.x = quat.x();
     msg.pose.orientation.y = quat.y();

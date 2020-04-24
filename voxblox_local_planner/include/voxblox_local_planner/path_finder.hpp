@@ -37,40 +37,41 @@ class PointSampler {
 class PathFinder {
     public:
         PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
-        // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
-        // void setEsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { esdf_map_ptr_ = map_ptr; };
-        // void setTsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { tsdf_map_ptr_ = map_ptr; };
-        // void setOrigin(const Eigen::Vector3d& origin) { origin_ = origin; };
         void setRobotRadius(const double& robot_radius) { robot_radius_ = robot_radius; };
         void findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
         Path getBestPath() { return best_candidate_path_; };
         double getMapDistance(const Eigen::Vector3d& point);
-        void visualizePaths();
+       
+        // void visualizePaths();
+        // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
+        // void setEsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { esdf_map_ptr_ = map_ptr; };
+        // void setTsdfMapPtr(const voxblox::EsdfMap::Ptr& map_ptr) { tsdf_map_ptr_ = map_ptr; };
+        // void setOrigin(const Eigen::Vector3d& origin) { origin_ = origin; };
 
     private:
-        void createGraph();
         void createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
-        void pruneGraph(Graph& graph);
-        void searchPaths(const uint& start_index, const uint& end_index);
-        Paths traverseGraph(const Graph& graph);
-    
-        // Nodes findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point);
-        bool checkConnection(const Node& start, const Node& end, const Eigen::Vector3d& point);
-        bool hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const double& threshold = 0.0);
-        bool hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, Eigen::Vector3d& point, const double& threshold = 0.0);
-        bool checkPathSimilarity(const Path& path1, const Path& path2, const double& threshold = 0.0);
-        double getPathLength(const Path& path);
-        Path discretizePath(const Path& path, const uint& num_points);
-        Path linearizePath(const Path& path);
-        Path linearize(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
-        int getIndex(const Eigen::Vector3d& point);
-
-        void trim(Paths& paths);
-        void trimPath(Path& path, const uint& iterations = 1);
-        Paths removeDuplicates(Paths& paths);
+        void searchPath(const uint& start_index, const uint& end_index);
         Path evaluatePaths(const Paths& paths);
+        double getPathLength(const Path& path);
+    
+        // void createGraph();
+        // void pruneGraph(Graph& graph);
+        // Paths traverseGraph(const Graph& graph);
+        // Nodes findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point);
+        // bool checkConnection(const Node& start, const Node& end, const Eigen::Vector3d& point);
+        // bool hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, const double& threshold = 0.0);
+        // bool hasLineOfSight(const Eigen::Vector3d& start, const Eigen::Vector3d& end, Eigen::Vector3d& point, const double& threshold = 0.0);
+        // bool checkPathSimilarity(const Path& path1, const Path& path2, const double& threshold = 0.0);
+        // Path discretizePath(const Path& path, const uint& num_points);
+        // Path linearizePath(const Path& path);
+        // Path linearize(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        // int getIndex(const Eigen::Vector3d& point);
 
-        bool getMapGradient(const Eigen::Vector3d& point, Eigen::Vector3d& gradient);
+        // void trim(Paths& paths);
+        // void trimPath(Path& path, const uint& iterations = 1);
+        // Paths removeDuplicates(Paths& paths);
+
+        // bool getMapGradient(const Eigen::Vector3d& point, Eigen::Vector3d& gradient);
 
         Path best_candidate_path_;
         Paths raw_paths_;
@@ -87,11 +88,11 @@ class PathFinder {
 
         bool visualize_;
 
-        Eigen::Vector3d origin_;
-        
         PointSampler sampler_;
-        RayCaster caster_;
         PathVisualizer visualizer_;
+        
+        // RayCaster caster_;
+        // Eigen::Vector3d origin_;
 };
 
 } // namespace ariitk::local_planner

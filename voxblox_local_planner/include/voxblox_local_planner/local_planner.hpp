@@ -18,16 +18,17 @@ class LocalPlanner {
         static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
             return std::sqrt(std::pow(p1.x-p2.x,2) + std::pow(p1.y-p2.y, 2) + std::pow(p1.z-p2.z, 2));
         }
+        
         void odometryCallback(const nav_msgs::Odometry& msg){ odometry_ = msg; }
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
+        
         void setYawFacing(geometry_msgs::PoseStamped& msg);
-        bool needReplan();
         void replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
 
-        // voxblox::EsdfServer server_;
-        Path waypoints_;
         uint curr_index_;
+        Path waypoints_;
+
         PathFinder pathfinder_;
         PathVisualizer visualizer_;
 

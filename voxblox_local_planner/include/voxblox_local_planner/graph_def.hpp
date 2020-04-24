@@ -44,6 +44,4 @@ typedef boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>
 typedef std::pair<Point, unsigned> Value;
 typedef boost::geometry::index::rtree<Value, boost::geometry::index::quadratic<16>> RTree;
 
-// typedef std::vector<Node> Nodes;
-
 } // namespace ariitk::local_planner
