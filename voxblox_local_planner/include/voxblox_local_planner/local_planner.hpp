@@ -23,12 +23,13 @@ class LocalPlanner {
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
         void setYawFacing(geometry_msgs::PoseStamped& msg);
         bool needReplan();
-        void replan();
+        void replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
 
         // voxblox::EsdfServer server_;
         Path waypoints_;
         uint curr_index_;
         PathFinder pathfinder_;
+        PathVisualizer visualizer_;
 
         bool visualize_;
         double last_yaw_;

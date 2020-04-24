@@ -6,10 +6,11 @@ void PointSampler::init(const Eigen::Vector3d& start, const Eigen::Vector3d& end
     region_ = Eigen::Vector3d(0.5, 1.0, 0.5); // parametrize
     region_(0) += 0.5 * (end - start).norm();
     translation_ = 0.5 * (start + end);
-    
+    ROS_WARN("CHEC");
     rotation_.col(0) = (end - translation_).normalized();
     rotation_.col(1) = rotation_.col(0).cross(Eigen::Vector3d(0,0,-1)).normalized();
     rotation_.col(2) = rotation_.col(0).cross(rotation_.col(1));
+    ROS_WARN("CHECi");
 }
 
 Eigen::Vector3d PointSampler::getSample() {
@@ -93,10 +94,12 @@ void PathFinder::findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vect
 
     searchPaths(0, 1);
     ROS_WARN_STREAM("CHECK3 " << raw_paths_.size());
-    visualizer_.visualizePaths("raw_paths", raw_paths_, "world", PathVisualizer::ColorType::TEAL);
+    if(raw_paths_.size()) visualizer_.visualizePaths("raw_paths", raw_paths_, "world", PathVisualizer::ColorType::TEAL);
     // trim(raw_paths);
     // Paths unique_paths = removeDuplicates(raw_paths);
     best_candidate_path_ = evaluatePaths(raw_paths_);
+    ROS_WARN("CHEBL3C");
+    
     // trimPath(best_candidate_path_);
     // best_candidate_path_ = raw_paths_[0];
     if(best_candidate_path_.size()) visualizer_.visualizePath("best_path", best_candidate_path_, "world", PathVisualizer::ColorType::GREEN);
@@ -107,11 +110,13 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     sampler_.init(start, end);
     uint max_samples = 1000;
     uint num_sample = 0;
+    ROS_WARN("CHE3C");
 
     graph_.push_back(Node(new GraphNode(start, 0)));
     graph_.push_back(Node(new GraphNode(end, 1)));
 
     uint node_id = 2;
+    ROS_WARN("CH32E3C");
     std::vector<Eigen::Vector3d> samples;
     while(num_sample++ < max_samples) {
         Eigen::Vector3d sample = sampler_.getSample();
@@ -121,19 +126,20 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
             graph_.push_back(Node(new GraphNode(sample, node_id++)));
         }
     }
+    ROS_WARN("CHE123C");
 
     visualizer_.visualizePoints("samples", samples, "world", PathVisualizer::ColorType::RED, 0.1);
     
     unsigned k = 4;
     tree_.clear();
 
-    // ROS_WARN_STREAM("CISJD");
+    ROS_WARN_STREAM("CISJD");
     for(auto& node : graph_) {
         Point pt = Point(node->getPosition().x(), node->getPosition().y(), node->getPosition().z());
         tree_.insert(std::make_pair(pt, node->getID()));
     }
 
-    // ROS_WARN_STREAM("BEUR");
+    ROS_WARN_STREAM("BEUR");
     for(auto& node : graph_) {
         std::vector<Value> neighbours;
         Point pt = Point(node->getPosition().x(), node->getPosition().y(), node->getPosition().z());
@@ -145,7 +151,7 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
             }
         }
     }
-    // ROS_WARN_STREAM("BEeUR");
+    ROS_WARN_STREAM("BEeUR");
 
 }
 
@@ -326,7 +332,6 @@ void PathFinder::searchPaths(const uint& start_index, const uint& end_index) {
     std::priority_queue<f_score_map, std::vector<f_score_map>, std::greater<f_score_map>> open_set;
     std::vector<double> g_score(graph_.size(), DBL_MAX);
     std::vector<uint> parent(graph_.size(), INT_MAX);
-    std::map<uint, bool> closed_set;
 
     open_set.push(std::make_pair(0.0, start_index));
     g_score[start_index] = 0.0;
