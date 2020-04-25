@@ -51,7 +51,8 @@ class PathFinder {
     private:
         void createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void searchPath(const uint& start_index, const uint& end_index);
-        bool shortenPath();
+        void shortenPath();
+        void findMaximalIndices(const uint& start, const uint& end, std::vector<bool>& map);
         bool isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         double getPathLength(const Path& path);
     

@@ -52,13 +52,22 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
     visualizer_.visualizeGraph("graph", graph_);
 
     searchPath(0, 1);
-    if(raw_path_.size()) visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
+    if(raw_path_.empty()) { 
+        ROS_WARN("Plan failed!");
+        return;
+    }
 
-    if(shortenPath()){
-        if(short_path_.size()) visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.1);
+    visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
+
+    shortenPath();
+    if(!short_path_.empty()){
+        visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.5);
         path_ = short_path_;
     }
-    else { path_ = raw_path_; }
+    else {
+        ROS_WARN("Shortening Failed!");
+        path_ = raw_path_; 
+    }
 }
 
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -145,13 +154,26 @@ void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
     }
 }
 
-bool PathFinder::shortenPath() {
-    if(raw_path_.empty()) { return false; }
+void PathFinder::shortenPath() {
+    if(raw_path_.empty()) { return; }
     short_path_.clear();
-    if(!isLineInCollision(raw_path_.front(), raw_path_.back())) {
-        short_path_.push_back(raw_path_.front());
-        short_path_.push_back(raw_path_.back());
-        return true;
+    std::vector<bool> retain(raw_path_.size(), false);
+    findMaximalIndices(0, raw_path_.size()-1, retain);
+    for(uint i = 0; i < raw_path_.size(); i++) {
+        if(retain[i]) short_path_.push_back(raw_path_[i]);
+    }
+}
+
+void PathFinder::findMaximalIndices(const uint& start, const uint& end, std::vector<bool>& map) {
+    if(start >= end) { return; }
+
+    if(!isLineInCollision(raw_path_[start], raw_path_[end])) {
+        map[start] = map[end] = true;
+        return;
+    } else {
+        uint centre = (start + end)/2;
+        findMaximalIndices(start, centre, map);
+        findMaximalIndices(centre, end, map);
     }
 }
 

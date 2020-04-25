@@ -29,13 +29,6 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     pathfinder_.findPath(start_odom.position_W, waypoint.position_W);
     waypoints_ = pathfinder_.getPath();
     ros::Rate loop_rate(10);
-
-    curr_index_ = 0;
-    while(ros::ok() && waypoints_.size() == 0) {
-        ros::spinOnce();
-        replan(start_odom.position_W, waypoint.position_W); // should remove if enhanced nodes
-        loop_rate.sleep();
-    }
     
     for(curr_index_ = 0; curr_index_ < waypoints_.size(); curr_index_++) {
         geometry_msgs::PoseStamped msg;
@@ -50,7 +43,10 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 
         while(ros::ok() && norm(odometry_.pose.pose.position, msg.pose.position) > 0.2) {
             ros::spinOnce();
-            if(checkReplan()) { replan(waypoints_[curr_index_], waypoints_.back()); }
+            if(checkReplan()) { 
+                ROS_WARN("Replanning!");
+                replan(waypoints_[curr_index_], waypoints_.back()); 
+            }
             loop_rate.sleep();
         }
     }
