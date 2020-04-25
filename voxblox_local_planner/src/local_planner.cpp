@@ -26,14 +26,14 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     mav_msgs::EigenTrajectoryPoint waypoint;
     mav_msgs::eigenTrajectoryPointFromPoseMsg(msg, &waypoint);
 
-    pathfinder_.findBestPath(start_odom.position_W, waypoint.position_W);
-    waypoints_ = pathfinder_.getBestPath();
+    pathfinder_.findPath(start_odom.position_W, waypoint.position_W);
+    waypoints_ = pathfinder_.getPath();
     ros::Rate loop_rate(10);
 
     curr_index_ = 0;
     while(ros::ok() && waypoints_.size() == 0) {
         ros::spinOnce();
-        replan(start_odom.position_W, waypoint.position_W);
+        replan(start_odom.position_W, waypoint.position_W); // should remove if enhanced nodes
         loop_rate.sleep();
     }
     
@@ -50,29 +50,30 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 
         while(ros::ok() && norm(odometry_.pose.pose.position, msg.pose.position) > 0.2) {
             ros::spinOnce();
-            Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
-            
-            Eigen::Vector3d frontier = curr_pos + (waypoints_[curr_index_] - curr_pos).normalized() * robot_radius_;
-            visualizer_.visualizePoint("frontier", frontier, "world", PathVisualizer::ColorType::RED, 1);
-            
-            if(pathfinder_.getMapDistance(frontier) < robot_radius_) {
-                replan(waypoints_[curr_index_], waypoints_.back());
-            }
-            
+            if(checkReplan()) { replan(waypoints_[curr_index_], waypoints_.back()); }
             loop_rate.sleep();
         }
     }
 }
 
+bool LocalPlanner::checkReplan() {
+    Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
+            
+    Eigen::Vector3d frontier = curr_pos + (waypoints_[curr_index_] - curr_pos).normalized() * robot_radius_;
+    visualizer_.visualizePoint("frontier", frontier, "world", PathVisualizer::ColorType::RED, 1);
+
+    return pathfinder_.getMapDistance(frontier) < robot_radius_;
+}
+
 void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    pathfinder_.findBestPath(start, end);
-    waypoints_ = pathfinder_.getBestPath();
+    pathfinder_.findPath(start, end);
+    waypoints_ = pathfinder_.getPath();
     ros::Rate loop_rate(10);
 
     while(ros::ok() && waypoints_.size() == 0) {
         ros::spinOnce();
-        pathfinder_.findBestPath(start, end);
-        waypoints_ = pathfinder_.getBestPath();
+        pathfinder_.findPath(start, end);
+        waypoints_ = pathfinder_.getPath();
         loop_rate.sleep();
     }
 

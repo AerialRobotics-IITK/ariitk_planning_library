@@ -100,10 +100,9 @@ void PathVisualizer::visualizePaths(const std::string& topic_name, const std::ve
         marker.ns = topic_name + "_" + std::to_string(++path_seq);
         marker.id = path_seq;
         marker.type = visualization_msgs::Marker::LINE_LIST;
-        marker.scale.x = marker.scale.y = marker.scale.z = 0.01;
+        marker.scale.x = marker.scale.y = marker.scale.z = voxel_size_ * size_factor;
         marker.action = visualization_msgs::Marker::ADD;
         marker.color = color_map_[color];
-
 
         geometry_msgs::Point prev_center;
         prev_center.x = path[0].x();
@@ -131,7 +130,6 @@ void PathVisualizer::visualizePoint(const std::string& topic_name, const Eigen::
     
     visualization_msgs::MarkerArray markers;
     int path_seq = 0;
-
 
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;

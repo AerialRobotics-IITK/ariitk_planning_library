@@ -24,6 +24,7 @@ class LocalPlanner {
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
         
         void setYawFacing(geometry_msgs::PoseStamped& msg);
+        bool checkReplan();
         void replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
 
         uint curr_index_;

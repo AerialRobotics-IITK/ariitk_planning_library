@@ -31,9 +31,9 @@ PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     visualizer_.init(nh, nh_private);
 
     if(visualize_) {
-        visualizer_.createPublisher("raw_paths");
+        visualizer_.createPublisher("raw_path");
         visualizer_.createPublisher("graph");
-        visualizer_.createPublisher("best_path");
+        visualizer_.createPublisher("short_path");
     }
 
     auto vs = voxel_size_;
@@ -47,15 +47,18 @@ PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     }
 }
 
-void PathFinder::findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt) {
+void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt) {
     createGraph(start_pt, end_pt);
     visualizer_.visualizeGraph("graph", graph_);
 
     searchPath(0, 1);
-    if(raw_paths_.size()) visualizer_.visualizePaths("raw_paths", raw_paths_, "world", PathVisualizer::ColorType::TEAL);
+    if(raw_path_.size()) visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
 
-    best_candidate_path_ = evaluatePaths(raw_paths_);
-    if(best_candidate_path_.size()) visualizer_.visualizePath("best_path", best_candidate_path_, "world", PathVisualizer::ColorType::GREEN);
+    if(shortenPath()){
+        if(short_path_.size()) visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.1);
+        path_ = short_path_;
+    }
+    else { path_ = raw_path_; }
 }
 
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -70,12 +73,10 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     graph_.push_back(Node(new GraphNode(end, 1)));
 
     uint node_id = 2;
-    std::vector<Eigen::Vector3d> samples;
     while(num_sample++ < max_samples) {
         Eigen::Vector3d sample = sampler_.getSample();
         double distance = getMapDistance(sample);
         if(distance >= robot_radius_) {
-            samples.push_back(sample);
             graph_.push_back(Node(new GraphNode(sample, node_id++)));
         }
     }
@@ -92,7 +93,6 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
         std::vector<Value> neighbours;
         Point pt = Point(node->getPosition().x(), node->getPosition().y(), node->getPosition().z());
         tree_.query(boost::geometry::index::nearest(pt, k+1), std::back_inserter(neighbours));
-        // ROS_WARN_STREAM(node->getID());
         for(auto& neighbour : neighbours) {
             if(neighbour.second != node->getID()) {
                 node->addNeighbour(graph_[neighbour.second]);
@@ -103,7 +103,7 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
 
 void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
     if(graph_.empty()) { return; }
-    raw_paths_.clear(); // TODO: don't need vector
+    raw_path_.clear(); // TODO: don't need vector
 
     Eigen::Vector3d start_pos = graph_[start_index]->getPosition();
     typedef std::pair<double, uint> f_score_map;
@@ -127,7 +127,7 @@ void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
                 curr_index = parent[curr_index];
             }
             std::reverse(curr_path.begin(), curr_path.end());
-            raw_paths_.push_back(curr_path);
+            raw_path_ = curr_path;
             return;
         }   
 
@@ -145,19 +145,37 @@ void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
     }
 }
 
-Path PathFinder::evaluatePaths(const Paths& paths) {
-    double min_length = DBL_MAX;
-    Path best_path;
-    
-    for(auto& path : paths){
-        double path_length = getPathLength(path);
-        if(path_length < min_length) {
-            best_path = path;
-            min_length = path_length; 
-        }
+bool PathFinder::shortenPath() {
+    if(raw_path_.empty()) { return false; }
+    short_path_.clear();
+    if(!isLineInCollision(raw_path_.front(), raw_path_.back())) {
+        short_path_.push_back(raw_path_.front());
+        short_path_.push_back(raw_path_.back());
+        return true;
+    }
+}
+
+bool PathFinder::isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+    Eigen::Vector3d direction = (end - start).normalized();
+    double distance = (end - start).norm();
+    if(distance < voxel_size_) { return false; }
+
+    Eigen::Vector3d curr_pos = start;
+    double cum_dist = 0.0;
+
+    while(cum_dist <= distance) {
+        voxblox::EsdfVoxel* esdf_voxel_ptr = server_.getEsdfMapPtr()->getEsdfLayerPtr()
+                ->getVoxelPtrByCoordinates(curr_pos.cast<voxblox::FloatingPoint>());
+        if(esdf_voxel_ptr == nullptr) { return true; }
+        if(esdf_voxel_ptr->distance < robot_radius_) { return true; }
+
+        double step_size = std::max(voxel_size_, esdf_voxel_ptr->distance - robot_radius_);
+
+        curr_pos += direction * step_size;
+        cum_dist += step_size;
     }
 
-    return best_path;
+    return false;
 }
 
 double PathFinder::getPathLength(const Path& path) {
@@ -171,6 +189,21 @@ double PathFinder::getMapDistance(const Eigen::Vector3d& point) {
     if (!server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) { return 0.0; }
     return distance;
 }
+
+// Path PathFinder::evaluatePaths(const Paths& paths) {
+//     double min_length = DBL_MAX;
+//     Path best_path;
+    
+//     for(auto& path : paths){
+//         double path_length = getPathLength(path);
+//         if(path_length < min_length) {
+//             best_path = path;
+//             min_length = path_length; 
+//         }
+//     }
+
+//     return best_path;
+// }
 
 // void PathFinder::createGraph() {
 //     uint node_id = 0;

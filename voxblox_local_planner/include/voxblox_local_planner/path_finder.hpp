@@ -38,8 +38,8 @@ class PathFinder {
     public:
         PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
         void setRobotRadius(const double& robot_radius) { robot_radius_ = robot_radius; };
-        void findBestPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
-        Path getBestPath() { return best_candidate_path_; };
+        void findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
+        Path getPath() { return path_; };
         double getMapDistance(const Eigen::Vector3d& point);
        
         // void visualizePaths();
@@ -51,10 +51,12 @@ class PathFinder {
     private:
         void createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void searchPath(const uint& start_index, const uint& end_index);
-        Path evaluatePaths(const Paths& paths);
+        bool shortenPath();
+        bool isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         double getPathLength(const Path& path);
     
         // void createGraph();
+        // Path evaluatePaths(const Paths& paths);
         // void pruneGraph(Graph& graph);
         // Paths traverseGraph(const Graph& graph);
         // Nodes findVisibleGuards(const Graph& graph, const Eigen::Vector3d& point);
@@ -73,8 +75,9 @@ class PathFinder {
 
         // bool getMapGradient(const Eigen::Vector3d& point, Eigen::Vector3d& gradient);
 
-        Path best_candidate_path_;
-        Paths raw_paths_;
+        Path short_path_;
+        Path raw_path_;
+        Path path_;
 
         Graph graph_;
         RTree tree_;
