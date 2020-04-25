@@ -109,16 +109,16 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
 
 void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
     if(graph_.empty()) { return; }
-    raw_path_.clear(); // TODO: don't need vector
+    raw_path_.clear();
 
-    Eigen::Vector3d start_pos = graph_[start_index]->getPosition();
+    Eigen::Vector3d end_pos = graph_[end_index]->getPosition();
     typedef std::pair<double, uint> f_score_map;
 
     std::priority_queue<f_score_map, std::vector<f_score_map>, std::greater<f_score_map>> open_set;
     std::vector<double> g_score(graph_.size(), DBL_MAX);
     std::vector<uint> parent(graph_.size(), INT_MAX);
 
-    open_set.push(std::make_pair(0.0, start_index));
+    open_set.push(std::make_pair((end_pos - graph_[start_index]->getPosition()).norm(), start_index));
     g_score[start_index] = 0.0;
 
     while(!open_set.empty()) {
@@ -132,6 +132,7 @@ void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
                 curr_path.push_back(graph_[curr_index]->getPosition());
                 curr_index = parent[curr_index];
             }
+            curr_path.push_back(graph_[start_index]->getPosition());
             std::reverse(curr_path.begin(), curr_path.end());
             raw_path_ = curr_path;
             return;
@@ -145,7 +146,7 @@ void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
             if(score < g_score[neigh_index]) {
                 g_score[neigh_index] = score;
                 parent[neigh_index] = curr_index;
-                open_set.push(std::make_pair(score + (neigh_pos - start_pos).norm(), neigh_index));
+                open_set.push(std::make_pair(score + (end_pos - neigh_pos).norm(), neigh_index));
             }
         }
     }
