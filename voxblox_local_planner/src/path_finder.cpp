@@ -23,7 +23,8 @@ Eigen::Vector3d PointSampler::getSample() {
 
 PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private) 
     : sampler_()
-    , server_(nh, nh_private) {
+    , server_(nh, nh_private)
+    , p_sample_(50) {
     nh_private.getParam("robot_radius", robot_radius_);
     nh_private.getParam("visualize", visualize_);
     voxel_size_ = double(server_.getEsdfMapPtr()->voxel_size());
@@ -53,8 +54,12 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
 
     searchPath(0, 1);
     if(raw_path_.empty()) { 
-        ROS_WARN("Plan failed!");
-        return;
+        ROS_WARN("Plan failed! Adding more nodes!");
+        p_sample_ *= 2;
+        createGraph(start_pt, end_pt);  // TODO: reuse over resample
+        p_sample_ /= 2;
+        visualizer_.visualizeGraph("graph", graph_);
+        searchPath(0, 1);
     }
 
     visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
@@ -71,8 +76,7 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     graph_.clear();
     sampler_.init(start, end);
 
-    uint density = 50; // parametrize
-    uint max_samples = density * (start - end).norm();
+    uint max_samples = p_sample_ * (start - end).norm();
     uint num_sample = 0;
 
     graph_.push_back(Node(new GraphNode(start, 0)));

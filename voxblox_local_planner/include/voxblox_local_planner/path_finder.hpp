@@ -89,6 +89,7 @@ class PathFinder {
         
         double robot_radius_;
         double voxel_size_;
+        uint p_sample_;
 
         bool visualize_;
 
