@@ -64,10 +64,7 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
         visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.5);
         path_ = short_path_;
     }
-    else {
-        ROS_WARN("Shortening Failed!");
-        path_ = raw_path_; 
-    }
+    else { path_ = raw_path_; }
 }
 
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -158,29 +155,31 @@ void PathFinder::shortenPath() {
     if(raw_path_.empty()) { return; }
     short_path_.clear();
     std::vector<bool> retain(raw_path_.size(), false);
-    findMaximalIndices(0, raw_path_.size()-1, retain);
+    ROS_WARN_STREAM(raw_path_.size());
+    findMaximalIndices(0, raw_path_.size()-1, &retain);
     for(uint i = 0; i < raw_path_.size(); i++) {
         if(retain[i]) short_path_.push_back(raw_path_[i]);
     }
 }
 
-void PathFinder::findMaximalIndices(const uint& start, const uint& end, std::vector<bool>& map) {
+void PathFinder::findMaximalIndices(const uint& start, const uint& end, std::vector<bool>* map) {
     if(start >= end) { return; }
 
     if(!isLineInCollision(raw_path_[start], raw_path_[end])) {
-        map[start] = map[end] = true;
+        (*map)[start] = (*map)[end] = true;
         return;
     } else {
         uint centre = (start + end)/2;
+        if(centre == start || centre == end) { return; }
         findMaximalIndices(start, centre, map);
         findMaximalIndices(centre, end, map);
     }
 }
 
 bool PathFinder::isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    Eigen::Vector3d direction = (end - start).normalized();
     double distance = (end - start).norm();
     if(distance < voxel_size_) { return false; }
+    Eigen::Vector3d direction = (end - start).normalized();
 
     Eigen::Vector3d curr_pos = start;
     double cum_dist = 0.0;
