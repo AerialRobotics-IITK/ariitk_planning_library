@@ -8,9 +8,11 @@ LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     , last_yaw_(0) {
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("robot_radius", robot_radius_);
+    nh_private.getParam("voxel_size", voxel_size_);
 
     visualizer_.init(nh, nh_private);
-    visualizer_.createPublisher("frontier");
+    visualizer_.createPublisher("occ_shield");
+    visualizer_.createPublisher("free_shield");
 
     odometry_sub_ = nh.subscribe("odometry", 1, &LocalPlanner::odometryCallback, this);
     waypoint_sub_ = nh.subscribe("waypoint", 1, &LocalPlanner::waypointCallback, this);
@@ -45,7 +47,15 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
             ros::spinOnce();
             if(checkReplan()) { 
                 ROS_WARN("Replanning!");
-                replan(waypoints_[curr_index_], waypoints_.back()); 
+                
+                geometry_msgs::PoseStamped stop_msg;
+                stop_msg.header.stamp = ros::Time::now();
+                stop_msg.pose = odometry_.pose.pose;
+                command_pub_.publish(stop_msg);
+
+                Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
+                replan(curr_pos, waypoints_[curr_index_]);
+                break;
             }
             loop_rate.sleep();
         }
@@ -54,26 +64,48 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 
 bool LocalPlanner::checkReplan() {
     Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
-            
-    Eigen::Vector3d frontier = curr_pos + (waypoints_[curr_index_] - curr_pos).normalized() * robot_radius_;
-    visualizer_.visualizePoint("frontier", frontier, "world", PathVisualizer::ColorType::RED, 1);
 
-    return pathfinder_.getMapDistance(frontier) < robot_radius_;
+    double view_angle = M_PI/6;
+    double angle_step = 0.2;
+    double check_radius = 2 * robot_radius_;
+
+    Eigen::Vector3d heading = waypoints_[curr_index_] - curr_pos;
+    
+    double desired_yaw = 0.0;
+    if (std::fabs(heading.x()) > 1e-4 || std::fabs(heading.y()) > 1e-4) {
+        desired_yaw = std::atan2(heading.y(), heading.x());
+    }
+
+    bool need_replan = false;
+
+    std::vector<Eigen::Vector3d> free_shield;
+    std::vector<Eigen::Vector3d> occupied_shield;
+
+    for(double angle = -view_angle; angle < view_angle; angle += angle_step) {
+        for(double step = -1; step <= 1; step++) {
+            Eigen::Vector3d pt = curr_pos + Eigen::Vector3d(cos(angle + desired_yaw), sin(angle + desired_yaw), 0) * check_radius;
+            pt.z() += step * voxel_size_;
+            double distance = 0.0;
+            if(pathfinder_.getMapDistance(pt, distance)) { 
+                if(distance < 0.0) {
+                    occupied_shield.push_back(pt);
+                } else { free_shield.push_back(pt); }
+            }
+        }
+    }
+
+    need_replan = (occupied_shield.size() >= 0.5 * free_shield.size());
+    // ROS_WARN_STREAM(occupied_shield.size() << " " << (free_shield.size() + occupied_shield.size()));
+    visualizer_.visualizePoints("occ_shield", occupied_shield, "world", PathVisualizer::ColorType::RED, 1);
+    visualizer_.visualizePoints("free_shield", free_shield, "world", PathVisualizer::ColorType::GREEN, 0.5);
+    return need_replan;
 }
 
 void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
     pathfinder_.findPath(start, end);
     waypoints_ = pathfinder_.getPath();
-    ros::Rate loop_rate(10);
-
-    while(ros::ok() && waypoints_.size() == 0) {
-        ros::spinOnce();
-        pathfinder_.findPath(start, end);
-        waypoints_ = pathfinder_.getPath();
-        loop_rate.sleep();
-    }
-
     curr_index_ = 0;
+    ROS_INFO("Replanned!");
 }
 
 void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
@@ -101,15 +133,6 @@ void LocalPlanner::setYawFacing(geometry_msgs::PoseStamped& msg) {
         desired_yaw = std::atan2(heading.y(), heading.x());
     }
     
-    double yaw_mod = fmod(desired_yaw - last_yaw_, 2 * M_PI);
-    if (yaw_mod < -M_PI) {
-        yaw_mod += 2 * M_PI;
-    } else if (yaw_mod > M_PI) {
-        yaw_mod -= 2 * M_PI;
-    }
-
-    last_yaw_ = desired_yaw;
-
     Eigen::Quaterniond quat = Eigen::Quaterniond(Eigen::AngleAxisd(desired_yaw, Eigen::Vector3d::UnitZ()));
     msg.pose.orientation.w = quat.w();
     msg.pose.orientation.x = quat.x();

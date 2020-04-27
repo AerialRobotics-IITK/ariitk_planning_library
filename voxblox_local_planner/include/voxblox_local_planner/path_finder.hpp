@@ -40,7 +40,9 @@ class PathFinder {
         void setRobotRadius(const double& robot_radius) { robot_radius_ = robot_radius; };
         void findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
         Path getPath() { return path_; };
-        double getMapDistance(const Eigen::Vector3d& point);
+        inline bool getMapDistance(const Eigen::Vector3d& point, double& distance) {
+            return server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance);
+        }
        
         // void visualizePaths();
         // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init

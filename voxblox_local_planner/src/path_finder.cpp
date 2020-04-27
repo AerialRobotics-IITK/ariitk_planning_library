@@ -64,12 +64,13 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
 
     visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
 
-    shortenPath();
-    if(!short_path_.empty()){
-        visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.5);
-        path_ = short_path_;
-    }
-    else { path_ = raw_path_; }
+    // shortenPath();
+    // if(!short_path_.empty()){
+        // visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.5);
+        // path_ = short_path_;
+    // }
+    // else { path_ = raw_path_; }
+    path_ = raw_path_;
 }
 
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -85,8 +86,8 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     uint node_id = 2;
     while(num_sample++ < max_samples) {
         Eigen::Vector3d sample = sampler_.getSample();
-        double distance = getMapDistance(sample);
-        if(distance >= robot_radius_) {
+        double distance = 0.0;
+        if(getMapDistance(sample, distance) && distance >= robot_radius_) {
             graph_.push_back(Node(new GraphNode(sample, node_id++)));
         }
     }
@@ -160,7 +161,6 @@ void PathFinder::shortenPath() {
     if(raw_path_.empty()) { return; }
     short_path_.clear();
     std::vector<bool> retain(raw_path_.size(), false);
-    ROS_WARN_STREAM(raw_path_.size());
     findMaximalIndices(0, raw_path_.size()-1, &retain);
     for(uint i = 0; i < raw_path_.size(); i++) {
         if(retain[i]) short_path_.push_back(raw_path_[i]);
@@ -208,12 +208,6 @@ double PathFinder::getPathLength(const Path& path) {
     double length = 0.0;
     for(int i = 0; i < path.size() - 1; i++) { length += (path[i+1] - path[i]).norm(); }
     return length;
-}
-
-double PathFinder::getMapDistance(const Eigen::Vector3d& point) {
-    double distance = 0.0;
-    if (!server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) { return 0.0; }
-    return distance;
 }
 
 // Path PathFinder::evaluatePaths(const Paths& paths) {

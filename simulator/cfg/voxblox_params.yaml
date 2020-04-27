@@ -28,7 +28,7 @@ color_mode: height                  # The method that will be used for coloring 
 min_time_between_msgs_sec: 0.1      # Minimum time to wait after integrating a message before accepting a new one.
 clear_sphere_for_planning: true     # The size of the queue used to subscribe to pointclouds.
 occupied_sphere_radius: 4.0         # Radius of the outer sphere where unknown is set to occupied, in meters.
-clear_sphere_radius: 0.7            # Radius of the inner sphere where unknown is set to free, in meters.
+clear_sphere_radius: 0.5            # Radius of the inner sphere where unknown is set to free, in meters.
                                     # Recommended to set slightly more than the robot radius
 slice_level: 1.0                    # The height at which generated tsdf and esdf slices will be made.
 esdf_add_occupied_crust: true       # Whether to add an outside layer of occupied voxels. 
