@@ -62,7 +62,6 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
             ros::spinOnce();
             if(checkForReplan()) { 
                 ROS_WARN("Replanning!");
-                
                 geometry_msgs::PoseStamped stop_msg;
                 stop_msg.header.stamp = ros::Time::now();
                 stop_msg.pose = odometry_.pose.pose;
@@ -77,46 +76,67 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     }
 }
 
+// bool LocalPlanner::checkForReplan() {
+//     // return false;
+//     Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
+
+//     double view_angle = M_PI/8;
+//     double angle_step = 0.2;
+//     double check_radius = 3 * robot_radius_;
+
+//     geometry_msgs::Quaternion curr_quat = odometry_.pose.pose.orientation;
+//     tf::Quaternion quat(curr_quat.x, curr_quat.y, curr_quat.z, curr_quat.w);
+//     double roll, pitch, curr_yaw;
+//     tf::Matrix3x3(quat).getRPY(roll, pitch, curr_yaw);
+
+//     bool need_replan = false;
+
+//     std::vector<Eigen::Vector3d> free_shield;
+//     std::vector<Eigen::Vector3d> occupied_shield;
+
+//     for(double angle = -view_angle; angle < view_angle; angle += angle_step) {
+//         for(double z_step = -1; z_step <= 1; z_step++) {
+//             int free_layer_count = 0;
+//             for(double r_step = -1; r_step <= 1; r_step++) {
+//                 Eigen::Vector3d pt = curr_pos + Eigen::Vector3d(cos(angle + curr_yaw), sin(angle + curr_yaw), 0) * (check_radius + r_step * voxel_size_);
+//                 pt.z() += z_step * voxel_size_;
+//                 double distance = 0.0;
+//                 if(pathfinder_.getMapDistance(pt, distance)) { 
+//                     if(distance < voxel_size_) {
+//                         occupied_shield.push_back(pt);
+//                     } else { 
+//                         free_layer_count++;
+//                         free_shield.push_back(pt); 
+//                     }
+//                 }
+//                 if(!need_replan) { need_replan = (free_layer_count == 0); }
+//             }
+//         }
+//     }
+
+//     visualizer_.visualizePoints("occ_shield", occupied_shield, "world", PathVisualizer::ColorType::RED, 1);
+//     visualizer_.visualizePoints("free_shield", free_shield, "world", PathVisualizer::ColorType::GREEN, 0.5);
+//     return need_replan;
+// }
+
 bool LocalPlanner::checkForReplan() {
-    return false;
-    Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
-
-    double view_angle = M_PI/8;
-    double angle_step = 0.2;
-    double check_radius = 1.5 * robot_radius_;
-
-    geometry_msgs::Quaternion curr_quat = odometry_.pose.pose.orientation;
-    tf::Quaternion quat(curr_quat.x, curr_quat.y, curr_quat.z, curr_quat.w);
-    double roll, pitch, curr_yaw;
-    tf::Matrix3x3(quat).getRPY(roll, pitch, curr_yaw);
-
+    if(trajectory_.empty()) { return false; }
     bool need_replan = false;
+    std::vector<Eigen::Vector3d> free_points;
+    std::vector<Eigen::Vector3d> occ_points;
 
-    std::vector<Eigen::Vector3d> free_shield;
-    std::vector<Eigen::Vector3d> occupied_shield;
-
-    for(double angle = -view_angle; angle < view_angle; angle += angle_step) {
-        for(double z_step = -1; z_step <= 1; z_step++) {
-            int free_layer_count = 0;
-            for(double r_step = -1; r_step <= 1; r_step++) {
-                Eigen::Vector3d pt = curr_pos + Eigen::Vector3d(cos(angle + curr_yaw), sin(angle + curr_yaw), 0) * (check_radius + r_step * voxel_size_);
-                pt.z() += z_step * voxel_size_;
-                double distance = 0.0;
-                if(pathfinder_.getMapDistance(pt, distance)) { 
-                    if(distance < voxel_size_) {
-                        occupied_shield.push_back(pt);
-                    } else { 
-                        free_layer_count++;
-                        free_shield.push_back(pt); 
-                    }
-                }
-                if(!need_replan) { need_replan = (free_layer_count == 0); }
-            }
+    double distance = 0.0;
+    for(auto& point : trajectory_) {
+        if(pathfinder_.getMapDistance(point.position_W, distance) && distance < voxel_size_) {
+            occ_points.push_back(point.position_W);
+        } else {
+            free_points.push_back(point.position_W);
         }
     }
 
-    visualizer_.visualizePoints("occ_shield", occupied_shield, "world", PathVisualizer::ColorType::RED, 1);
-    visualizer_.visualizePoints("free_shield", free_shield, "world", PathVisualizer::ColorType::GREEN, 0.5);
+    need_replan = (occ_points.size() > 0);
+    visualizer_.visualizePoints("occ_shield", occ_points, "world", PathVisualizer::ColorType::RED, 1);
+    visualizer_.visualizePoints("free_shield", free_points, "world", PathVisualizer::ColorType::GREEN, 0.5);
     return need_replan;
 }
 

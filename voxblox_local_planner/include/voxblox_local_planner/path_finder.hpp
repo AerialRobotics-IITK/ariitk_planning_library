@@ -21,7 +21,9 @@ class PointSampler {
             dist_ = std::uniform_real_distribution<double>(-1.0, 1.0);
         }
         void init(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void expandRegion(const double& size);
         Eigen::Vector3d getSample();
+        double getWidth() { return region_(1); }
     
     private:
         std::random_device rd_;
@@ -43,6 +45,8 @@ class PathFinder {
             return server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance);
         }
         double getMapDistanceAndGradient(const Eigen::Vector3d& position, Eigen::Vector3d* gradient) const;
+        void expandSamplingRegion(const double& size);
+        void increaseSamplingDensity(const double& factor);
        
         // void visualizePaths();
         // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
@@ -94,6 +98,12 @@ class PathFinder {
         uint p_sample_;
 
         bool visualize_;
+
+        bool expand_region_;
+        double expand_size_;
+
+        bool inc_density_;
+        double density_factor_;
 
         PointSampler sampler_;
         PathVisualizer visualizer_;

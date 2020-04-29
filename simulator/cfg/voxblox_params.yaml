@@ -12,13 +12,13 @@ publish_traversable: false          # Whether to display a traversability pointc
 
 update_mesh_every_n_sec: 0.25       # Rate at which the mesh topic will be published to, a value of 0 disables. 
                                     # This will not trigger any other mesh operations, such as generating a ply file.
-update_esdf_every_n_sec: 0.25       # How often the ESDF map should be updated
+update_esdf_every_n_sec: 0.1        # How often the ESDF map should be updated
 publish_map_every_n_sec: 0.25       # Rate at which the TSDF and ESDF maps are published, if they are published.
 
 method: fast                        # TSDF integrator method: can be 'simple', 'merged', or 'fast'
 tsdf_voxel_size: 0.2                # Size of the tsdf voxels, in meters
 tsdf_voxels_per_side: 16            # TSDF voxels per side of an allocated block. Must be a power of 2
-esdf_max_distance_m: 2.0            # The maximum distance that the esdf will be calculated out to.
+esdf_max_distance_m: 4.0            # The maximum distance that the esdf will be calculated out to.
 max_ray_length_m: 10.0              # The maximum range out to which a ray will be cast
 voxel_carving_enabled: true         # If true, the entire length of a ray is integrated, 
                                     # if false only the region inside the truncation distance is used.
