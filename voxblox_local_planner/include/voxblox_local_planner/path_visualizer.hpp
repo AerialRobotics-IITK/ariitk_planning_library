@@ -3,6 +3,7 @@
 #include <ros/ros.h>
 #include <Eigen/Eigen>
 #include <visualization_msgs/MarkerArray.h>
+#include <mav_msgs/eigen_mav_msgs.h>
 #include <std_msgs/ColorRGBA.h>
 
 #include <voxblox_local_planner/graph_def.hpp>
@@ -49,6 +50,8 @@ class PathVisualizer {
                        const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
         void visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& point, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
+        void visualizeTrajectory(const std::string& topic_name, const mav_msgs::EigenTrajectoryPointVector& trajectory, 
+                       const std::string& frame_id = "world", const ColorType& color = ColorType::BLACK, const double& size_factor = 1.0);
 
     private:
         ros::NodeHandle nh_;

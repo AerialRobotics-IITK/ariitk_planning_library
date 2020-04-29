@@ -35,6 +35,7 @@ PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
         visualizer_.createPublisher("raw_path");
         visualizer_.createPublisher("graph");
         visualizer_.createPublisher("short_path");
+        visualizer_.createPublisher("smooth_path");
     }
 
     auto vs = voxel_size_;
@@ -56,7 +57,7 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
     if(raw_path_.empty()) { 
         ROS_WARN("Plan failed! Adding more nodes!");
         p_sample_ *= 2;
-        createGraph(start_pt, end_pt);  // TODO: reuse over resample
+        createGraph(start_pt, end_pt);  // TODO: reuse over resample, consider connecting if disconnected.
         p_sample_ /= 2;
         visualizer_.visualizeGraph("graph", graph_);
         searchPath(0, 1);
@@ -64,13 +65,14 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
 
     visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
 
-    // shortenPath();
-    // if(!short_path_.empty()){
-        // visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.5);
-        // path_ = short_path_;
-    // }
-    // else { path_ = raw_path_; }
-    path_ = raw_path_;
+    shortenPath();
+    if(!short_path_.empty()){
+        visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.1);
+        path_ = short_path_;
+    }
+    else { path_ = raw_path_; }
+
+    // path_ = raw_path_;
 }
 
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -208,6 +210,17 @@ double PathFinder::getPathLength(const Path& path) {
     double length = 0.0;
     for(int i = 0; i < path.size() - 1; i++) { length += (path[i+1] - path[i]).norm(); }
     return length;
+}
+
+double PathFinder::getMapDistanceAndGradient(
+    const Eigen::Vector3d& position, Eigen::Vector3d* gradient) const {
+  double distance = 0.0;
+  const bool kInterpolate = false;
+  if (!server_.getEsdfMapPtr()->getDistanceAndGradientAtPosition(
+          position, kInterpolate, &distance, gradient)) {
+    return 0.0;
+  }
+  return distance;
 }
 
 // Path PathFinder::evaluatePaths(const Paths& paths) {

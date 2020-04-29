@@ -29,7 +29,6 @@ void PathVisualizer::createPublisher(const std::string& topic_name) {
 
 void PathVisualizer::visualizePath(const std::string& topic_name, const std::vector<Eigen::Vector3d>& path, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
-    
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
@@ -63,7 +62,6 @@ void PathVisualizer::visualizePath(const std::string& topic_name, const std::vec
 
 void PathVisualizer::visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
-    
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
@@ -89,7 +87,6 @@ void PathVisualizer::visualizePoints(const std::string& topic_name, const std::v
 
 void PathVisualizer::visualizePaths(const std::string& topic_name, const std::vector<std::vector<Eigen::Vector3d>>& paths, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
-    
     visualization_msgs::MarkerArray markers;
     int path_seq = 0;
 
@@ -127,7 +124,6 @@ void PathVisualizer::visualizePaths(const std::string& topic_name, const std::ve
 
 void PathVisualizer::visualizePoint(const std::string& topic_name, const Eigen::Vector3d& point, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
-    
     visualization_msgs::MarkerArray markers;
     int path_seq = 0;
 
@@ -211,5 +207,36 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
     publisher_map_[topic_name].publish(markers);
 }
 
-} // namespace ariitk::local_planner
+void PathVisualizer::visualizeTrajectory(const std::string& topic_name, const mav_msgs::EigenTrajectoryPointVector& trajectory,
+                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
+visualization_msgs::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = topic_name;
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::LINE_LIST;
+    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * size_factor;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.color = color_map_[color];
 
+    geometry_msgs::Point prev_center;
+    prev_center.x = trajectory[0].position_W.x();
+    prev_center.y = trajectory[0].position_W.y();
+    prev_center.z = trajectory[0].position_W.z();
+
+    for(uint i = 1; i < trajectory.size(); i++) {
+        marker.points.push_back(prev_center);
+        geometry_msgs::Point center;
+        center.x = trajectory[i].position_W.x();
+        center.y = trajectory[i].position_W.y();
+        center.z = trajectory[i].position_W.z();
+        marker.points.push_back(center);
+        prev_center = center;
+    }
+    
+    visualization_msgs::MarkerArray markers;
+    markers.markers.push_back(marker);
+    publisher_map_[topic_name].publish(markers);    // protect this
+}
+
+} // namespace ariitk::local_planner

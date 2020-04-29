@@ -6,7 +6,6 @@
 #include <voxblox_ros/esdf_server.h>
 #include <voxblox/core/tsdf_map.h>
 
-#include <voxblox_local_planner/ray_caster.hpp>
 #include <voxblox_local_planner/path_visualizer.hpp>
 #include <voxblox_local_planner/graph_def.hpp>
 
@@ -43,6 +42,7 @@ class PathFinder {
         inline bool getMapDistance(const Eigen::Vector3d& point, double& distance) {
             return server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance);
         }
+        double getMapDistanceAndGradient(const Eigen::Vector3d& position, Eigen::Vector3d* gradient) const;
        
         // void visualizePaths();
         // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
@@ -97,9 +97,6 @@ class PathFinder {
 
         PointSampler sampler_;
         PathVisualizer visualizer_;
-        
-        // RayCaster caster_;
-        // Eigen::Vector3d origin_;
 };
 
 } // namespace ariitk::local_planner
