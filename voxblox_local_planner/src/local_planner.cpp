@@ -10,6 +10,7 @@ LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("robot_radius", robot_radius_);
     nh_private.getParam("voxel_size", voxel_size_);
+    nh_private.getParam("sampling_dt", sampling_dt_);
 
     smoother_.setParametersFromRos(nh_private);
     smoother_.setMinCollisionCheckResolution(voxel_size_);
@@ -25,6 +26,7 @@ LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     visualizer_.createPublisher("occ_shield");
     visualizer_.createPublisher("free_shield");
     visualizer_.createPublisher("trajectory");
+    visualizer_.createPublisher("segment");
 
     odometry_sub_ = nh.subscribe("odometry", 1, &LocalPlanner::odometryCallback, this);
     waypoint_sub_ = nh.subscribe("waypoint", 1, &LocalPlanner::waypointCallback, this);
@@ -43,37 +45,63 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 
     pathfinder_.findPath(start_odom.position_W, waypoint.position_W);
     waypoints_ = pathfinder_.getPath();
+    generateTrajectoryThroughWaypoints(waypoints_);
     ros::Rate loop_rate(10);
+
+    trajectory_msgs::MultiDOFJointTrajectory traj_msg;
+    traj_msg.header.stamp = ros::Time::now();
+    mav_msgs::msgMultiDofJointTrajectoryFromEigen(trajectory_, &traj_msg);
+    traj_pub_.publish(traj_msg);
     
-    for(curr_index_ = 0; curr_index_ < waypoints_.size(); curr_index_++) {
-        mav_msgs::EigenOdometry curr_odom;
-        mav_msgs::eigenOdometryFromMsg(odometry_, &curr_odom);
+    while(ros::ok() && norm(odometry_.pose.pose.position, trajectory_.back().position_W) > 0.2) {
+        ros::spinOnce();
+        if(checkForReplan()) { 
+            ROS_WARN("Replanning!");
+            geometry_msgs::PoseStamped stop_msg;
+            stop_msg.header.stamp = ros::Time::now();
+            stop_msg.pose = odometry_.pose.pose;
+            command_pub_.publish(stop_msg);
 
-        generateTrajectory(curr_odom.position_W, waypoints_[curr_index_]);
-
-        trajectory_msgs::MultiDOFJointTrajectory traj_msg;
-        traj_msg.header.stamp = ros::Time::now();
-
-        visualizer_.visualizeTrajectory("trajectory", trajectory_, "world", PathVisualizer::ColorType::BLACK, 0.2);
-        mav_msgs::msgMultiDofJointTrajectoryFromEigen(trajectory_, &traj_msg);
-        traj_pub_.publish(traj_msg);
-
-        while(ros::ok() && norm(odometry_.pose.pose.position, waypoints_[curr_index_]) > 0.2) {
-            ros::spinOnce();
-            if(checkForReplan()) { 
-                ROS_WARN("Replanning!");
-                geometry_msgs::PoseStamped stop_msg;
-                stop_msg.header.stamp = ros::Time::now();
-                stop_msg.pose = odometry_.pose.pose;
-                command_pub_.publish(stop_msg);
-
-                Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
-                replan(curr_pos, waypoints_[curr_index_]);
-                break;
-            }
-            loop_rate.sleep();
+            Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
+            replan(curr_pos, waypoints_[curr_index_]);
+            break;
         }
+        loop_rate.sleep();
     }
+
+    // for(curr_index_ = 0; curr_index_ < waypoints_.size(); curr_index_++) {
+    //     mav_msgs::EigenOdometry curr_odom;
+    //     mav_msgs::eigenOdometryFromMsg(odometry_, &curr_odom);
+
+    //     uint end_index = getTrajectorySegment(waypoints_[curr_index_]);
+    //     Trajectory segment(trajectory_.begin() + path_index_, trajectory_.begin() + end_index);
+    //     visualizer_.visualizeTrajectory("segment", segment, "world", PathVisualizer::ColorType::WHITE, 0.2);
+    //     path_index_ = end_index;
+        
+    //     trajectory_msgs::MultiDOFJointTrajectory traj_msg;
+    //     traj_msg.header.stamp = ros::Time::now();
+
+    //     if(!segment.empty()) mav_msgs::msgMultiDofJointTrajectoryFromEigen(segment, &traj_msg);
+    //     traj_pub_.publish(traj_msg);
+    //     ROS_INFO("MOVIN!");
+
+    //     while(ros::ok() && norm(odometry_.pose.pose.position, waypoints_[curr_index_]) > 0.2) {
+    //         ros::spinOnce();
+    //         if(checkForReplan()) { 
+    //             ROS_WARN("Replanning!");
+    //             geometry_msgs::PoseStamped stop_msg;
+    //             stop_msg.header.stamp = ros::Time::now();
+    //             stop_msg.pose = odometry_.pose.pose;
+    //             command_pub_.publish(stop_msg);
+
+    //             Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
+    //             replan(curr_pos, waypoints_[curr_index_]);
+    //             break;
+    //         }
+    //         loop_rate.sleep();
+    //     }
+    //     ROS_INFO("MOVED!");
+    // }
 }
 
 // bool LocalPlanner::checkForReplan() {
@@ -120,13 +148,13 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 // }
 
 bool LocalPlanner::checkForReplan() {
-    if(trajectory_.empty()) { return false; }
+    // return false;
     bool need_replan = false;
     std::vector<Eigen::Vector3d> free_points;
     std::vector<Eigen::Vector3d> occ_points;
 
     double distance = 0.0;
-    for(auto& point : trajectory_) {
+    for(auto& point : trajectory_) {    // optimize
         if(pathfinder_.getMapDistance(point.position_W, distance) && distance < voxel_size_) {
             occ_points.push_back(point.position_W);
         } else {
@@ -144,6 +172,7 @@ void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& e
     pathfinder_.inflateRadius(2.0);
     pathfinder_.findPath(start, end);
     waypoints_ = pathfinder_.getPath();
+    generateTrajectoryThroughWaypoints(waypoints_);
     curr_index_ = 0;
     ROS_INFO("Replanned!");
 }
@@ -157,8 +186,9 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
     }
 }
 
-void LocalPlanner::generateTrajectory(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
     trajectory_.clear();
+    path_index_ = 0;
     mav_msgs::EigenTrajectoryPoint start_pt, end_pt;
     start_pt.position_W = start;
     end_pt.position_W = end;
@@ -171,6 +201,48 @@ void LocalPlanner::generateTrajectory(const Eigen::Vector3d& start, const Eigen:
     applyYawToTrajectory();
 }
 
+void LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoints) {
+    trajectory_.clear();
+    path_index_ = 0;
+    if(waypoints.empty()) { return; }
+
+    Trajectory eigen_waypts;
+    convertPathToTrajectory(waypoints, eigen_waypts);
+
+    if(norm(waypoints.front(), waypoints.back()) < voxel_size_) { 
+        trajectory_ = eigen_waypts; 
+        applyYawToTrajectory();
+        return;
+    }
+
+    mav_trajectory_generation::Trajectory gen_traj;
+    bool success = smoother_.getTrajectoryBetweenWaypoints(eigen_waypts, &gen_traj);
+    if(success) { 
+        mav_trajectory_generation::sampleWholeTrajectory(gen_traj, sampling_dt_, &trajectory_); 
+    } 
+    else { trajectory_ = eigen_waypts; }
+
+    applyYawToTrajectory();
+}
+
+// uint LocalPlanner::getTrajectorySegment(const Eigen::Vector3d& end_pt) {
+//     segment_.clear();
+//     if(trajectory_.empty()) { return path_index_; }
+
+//     uint end_index = path_index_;
+//     ROS_WARN_STREAM(end_pt);
+//     ROS_WARN_STREAM(trajectory_.size() << " " << path_index_);
+//     ROS_WARN_STREAM(trajectory_[path_index_].position_W);
+
+//     for(auto& index = path_index_; index < trajectory_.size(); index++) {
+//         if(trajectory_[index].position_W == end_pt) {
+//             end_index = index;
+//             ROS_WARN_STREAM(end_index);
+//             return end_index;
+//         }
+//     }
+// }
+
 void LocalPlanner::applyYawToTrajectory() {
     if(trajectory_.size() < 2) { return; }
     for(auto i = 0; i < trajectory_.size() - 1; i++) {
@@ -181,6 +253,7 @@ void LocalPlanner::applyYawToTrajectory() {
         }
         trajectory_[i].setFromYaw(desired_yaw);
     }
+    visualizer_.visualizeTrajectory("trajectory", trajectory_, "world", PathVisualizer::ColorType::BLACK, 0.2);
 }
 
 // void LocalPlanner::setYawFacing(geometry_msgs::PoseStamped& msg) {

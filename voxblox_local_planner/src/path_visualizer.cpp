@@ -209,7 +209,9 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
 
 void PathVisualizer::visualizeTrajectory(const std::string& topic_name, const mav_msgs::EigenTrajectoryPointVector& trajectory,
                         const std::string& frame_id, const ColorType& color, const double& size_factor) {
-visualization_msgs::Marker marker;
+    if(trajectory.empty()) { return; }
+
+    visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
     marker.ns = topic_name;

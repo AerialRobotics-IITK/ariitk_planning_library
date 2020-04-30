@@ -10,6 +10,7 @@
 #include <Eigen/Eigen>
 
 #include <voxblox_local_planner/path_finder.hpp>
+#include <mav_trajectory_generation/trajectory_sampling.h>
 
 namespace ariitk::local_planner {
 
@@ -39,7 +40,9 @@ class LocalPlanner {
         void applyYawToTrajectory();
         bool checkForReplan();
         void replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
-        void generateTrajectory(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void generateTrajectoryThroughWaypoints(const Path& waypoints);
+        uint getTrajectorySegment(const Eigen::Vector3d& end_pt);
         void convertPathToTrajectory(const Path& path, Trajectory& trajectory);
         inline double getMapDistanceAndGradient(const Eigen::Vector3d& point, Eigen::Vector3d* gradient) const {
             return pathfinder_.getMapDistanceAndGradient(point, gradient);
@@ -48,6 +51,8 @@ class LocalPlanner {
         uint curr_index_;
         Path waypoints_;
         Trajectory trajectory_;
+        Trajectory segment_;
+        uint path_index_;
 
         PathFinder pathfinder_;
         PathVisualizer visualizer_;
