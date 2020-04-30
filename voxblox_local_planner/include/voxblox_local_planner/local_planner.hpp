@@ -47,13 +47,9 @@ class LocalPlanner {
         inline double getMapDistanceAndGradient(const Eigen::Vector3d& point, Eigen::Vector3d* gradient) const {
             return pathfinder_.getMapDistanceAndGradient(point, gradient);
         }
-        // uint getTrajectorySegment(const Eigen::Vector3d& end_pt);
 
-        // uint curr_index_;
         Path waypoints_;
         Trajectory trajectory_;
-        // Trajectory segment_;
-        // uint path_index_;
 
         PathFinder pathfinder_;
         PathVisualizer visualizer_;
