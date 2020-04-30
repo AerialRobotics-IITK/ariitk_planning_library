@@ -29,6 +29,8 @@ void PathVisualizer::createPublisher(const std::string& topic_name) {
 
 void PathVisualizer::visualizePath(const std::string& topic_name, const std::vector<Eigen::Vector3d>& path, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
+    if(path.empty()) { return; }
+
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
@@ -62,6 +64,8 @@ void PathVisualizer::visualizePath(const std::string& topic_name, const std::vec
 
 void PathVisualizer::visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
+    if(points.empty()) { return; }
+
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
@@ -87,6 +91,8 @@ void PathVisualizer::visualizePoints(const std::string& topic_name, const std::v
 
 void PathVisualizer::visualizePaths(const std::string& topic_name, const std::vector<std::vector<Eigen::Vector3d>>& paths, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
+    if(paths.empty()) { return; }
+
     visualization_msgs::MarkerArray markers;
     int path_seq = 0;
 
@@ -150,6 +156,7 @@ void PathVisualizer::visualizePoint(const std::string& topic_name, const Eigen::
 
 void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& graph,
                         const std::string& frame_id, const ColorType& vertex_color, const ColorType& edge_color, const double& size_factor) {
+    if(graph.empty()) { return; }
     visualization_msgs::MarkerArray markers;
     
     visualization_msgs::Marker vertex_marker;
