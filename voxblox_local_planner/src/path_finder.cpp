@@ -32,7 +32,9 @@ PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     , expand_region_(false) 
     , expand_size_(5) 
     , inc_density_(false)
-    , density_factor_(1.0) {
+    , density_factor_(1.0)
+    , inflate_radius_(false)
+    , inflate_factor_(1.0) {
     nh_private.getParam("robot_radius", robot_radius_);
     nh_private.getParam("visualize", visualize_);
     voxel_size_ = double(server_.getEsdfMapPtr()->voxel_size());
@@ -85,8 +87,10 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
     graph_.clear();
     sampler_.init(start, end);
+
     double p_sample = p_sample_;
-    
+    double robot_radius = robot_radius_;
+
     if(inc_density_) {
         p_sample *= density_factor_;
         inc_density_ = false; // use and throw
@@ -95,6 +99,11 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     if(expand_region_) {
         sampler_.expandRegion(expand_size_);
         expand_region_ = false; // use and throw
+    }
+
+    if(inflate_radius_) {
+        robot_radius *= inflate_factor_;
+        inflate_radius_ = false;
     }
 
     uint max_samples = p_sample * (start - end).norm() * sampler_.getWidth() ;
@@ -107,7 +116,7 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
     while(num_sample++ < max_samples) {
         Eigen::Vector3d sample = sampler_.getSample();
         double distance = 0.0;
-        if(getMapDistance(sample, distance) && distance >= robot_radius_) {
+        if(getMapDistance(sample, distance) && distance >= robot_radius) {
             graph_.push_back(Node(new GraphNode(sample, node_id++)));
         }
     }
@@ -250,6 +259,11 @@ void PathFinder::expandSamplingRegion(const double& size) {
 void PathFinder::increaseSamplingDensity(const double& factor) {
     inc_density_ = true;
     density_factor_ = factor;
+}
+
+void PathFinder::inflateRadius(const double& factor) {
+    inflate_radius_ = true;
+    inflate_factor_ = factor;
 }
 
 // Path PathFinder::evaluatePaths(const Paths& paths) {

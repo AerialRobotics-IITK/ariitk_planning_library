@@ -47,6 +47,7 @@ class PathFinder {
         double getMapDistanceAndGradient(const Eigen::Vector3d& position, Eigen::Vector3d* gradient) const;
         void expandSamplingRegion(const double& size);
         void increaseSamplingDensity(const double& factor);
+        void inflateRadius(const double& factor);
        
         // void visualizePaths();
         // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
@@ -104,6 +105,9 @@ class PathFinder {
 
         bool inc_density_;
         double density_factor_;
+
+        bool inflate_radius_;
+        double inflate_factor_;
 
         PointSampler sampler_;
         PathVisualizer visualizer_;

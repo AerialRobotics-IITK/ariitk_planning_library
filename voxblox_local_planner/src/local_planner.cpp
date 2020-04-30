@@ -141,6 +141,7 @@ bool LocalPlanner::checkForReplan() {
 }
 
 void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+    pathfinder_.inflateRadius(2.0);
     pathfinder_.findPath(start, end);
     waypoints_ = pathfinder_.getPath();
     curr_index_ = 0;
