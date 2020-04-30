@@ -38,7 +38,7 @@ class LocalPlanner {
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
         
         void applyYawToTrajectory(Trajectory& trajectory);
-        bool checkForReplan();
+        bool checkForReplan(const Trajectory& trajectory);
         Trajectory plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void executePlan(const Trajectory& trajectory);
         void generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
@@ -63,6 +63,7 @@ class LocalPlanner {
 
         uint curr_waypt_;
         size_t path_index_;
+        size_t pub_index_;
 
         ros::Publisher command_pub_;
         ros::Publisher traj_pub_;

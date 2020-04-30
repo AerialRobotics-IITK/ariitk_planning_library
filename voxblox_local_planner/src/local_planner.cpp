@@ -52,7 +52,7 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     
     while(ros::ok() && norm(odometry_.pose.pose.position, trajectory_.back().position_W) > voxel_size_) {
         ros::spinOnce();
-        if(checkForReplan()) { 
+        if(checkForReplan(trajectory_)) { 
             ROS_WARN("Replanning!");
             geometry_msgs::PoseStamped stop_msg;
             stop_msg.header.stamp = ros::Time::now();
@@ -62,6 +62,7 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
             Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
             pathfinder_.inflateRadius(2.0);
             trajectory_ = plan(curr_pos, trajectory_.back().position_W);
+            path_index_ = pub_index_ = 0;
             ROS_INFO("Replanned!");
             executePlan(trajectory_);
         }
@@ -69,13 +70,13 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     }
 }
 
-bool LocalPlanner::checkForReplan() {
+bool LocalPlanner::checkForReplan(const Trajectory& segment) {
     bool need_replan = false;
     uint occupied = 0;
     std::vector<Eigen::Vector3d> free_points, occ_points;
 
     double distance = 0.0;
-    for(auto& point : trajectory_) {    // optimize
+    for(auto& point : segment) {
         if(pathfinder_.getMapDistance(point.position_W, distance) && distance < voxel_size_) {
             occupied++;
             if(visualize_) { occ_points.push_back(point.position_W); }
@@ -106,10 +107,11 @@ void LocalPlanner::executePlan(const Trajectory& trajectory) {
         return;
     }
 
+    path_index_ = pub_index_;
     trajectory_msgs::MultiDOFJointTrajectory traj_msg;
     traj_msg.header.stamp = ros::Time::now();
     mav_msgs::msgMultiDofJointTrajectoryFromEigen(trajectory, &traj_msg);
-    path_index_ += trajectory.size();
+    pub_index_ += trajectory.size();
     
     traj_pub_.publish(traj_msg);
 }
@@ -148,7 +150,8 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
             trajectory_.insert(trajectory_.end(), next_path.begin(), next_path.end());
             executePlan(next_path); // should we execute immediately? TODO: separate preplan and execution
         }
-        if(checkForReplan()) {
+        Trajectory segment(trajectory_.begin() + path_index_, trajectory_.begin() + pub_index_);
+        if(checkForReplan(segment)) {
             ROS_WARN("Replanning!");
             geometry_msgs::PoseStamped stop_msg;
             stop_msg.header.stamp = ros::Time::now();
@@ -157,8 +160,8 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
 
             Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
             pathfinder_.inflateRadius(2.0);
-            trajectory_ = plan(curr_pos, trajectory_.back().position_W);
-            path_index_ = 0;
+            trajectory_ = plan(curr_pos, trajectory_.back().position_W); // what if trajectory_.back() is also occupied? TODO: Nearest Free Goal
+            path_index_ = pub_index_ = 0;
             ROS_INFO("Replanned!");
             executePlan(trajectory_);
         }
@@ -216,6 +219,8 @@ Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoint
 
 void LocalPlanner::applyYawToTrajectory(Trajectory& trajectory) {
     if(trajectory.size() < 2) { return; }
+    // TODO: Antipicate Velocity Vector policy
+
     for(auto i = 0; i < trajectory.size() - 1; i++) {
         Eigen::Vector3d heading = trajectory[i+1].position_W - trajectory[i].position_W;
         double desired_yaw = 0.0;
@@ -237,7 +242,7 @@ void LocalPlanner::convertPathToTrajectory(const Path& path, Trajectory& traject
 void LocalPlanner::clear() {
     waypoints_.clear();
     trajectory_.clear();
-    curr_waypt_ = path_index_ = 0;
+    curr_waypt_ = path_index_ = pub_index_ = 0;
 }
 
 } // namespace ariitk::local_planner

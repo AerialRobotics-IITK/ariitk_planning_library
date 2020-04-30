@@ -5,11 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /RobotModel1/Links1
-        - /VoxbloxServer1
-        - /VoxbloxServer1/VoxbloxMesh1
-        - /VoxbloxServer1/OccupiedNodes1
-        - /VoxbloxServer1/TSDFPointCloud1
-        - /GlobalPlanner1
         - /GlobalPlanner1/GlobalPath1/Namespaces1
         - /GlobalPlanner1/SparseGraph1
         - /GlobalPlanner1/SparseGraph1/Namespaces1
@@ -209,13 +204,54 @@ Visualization Manager:
       Displays:
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /firefly/mav_local_planner/local_path
-          Name: LocalPath
+          Marker Topic: /firefly/voxblox_local_planner/graph
+          Name: Graph
           Namespaces:
-            {}
+            edges: true
+            vertices: true
           Queue Size: 100
           Value: true
-      Enabled: false
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/trajectory
+          Name: Trajectory
+          Namespaces:
+            trajectory: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/raw_path
+          Name: RawPath
+          Namespaces:
+            raw_path: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/occupied_path
+          Name: OccupiedTrajectory
+          Namespaces:
+            occupied_path: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/free_path
+          Name: FreeTrajectory
+          Namespaces:
+            free_path: true
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/short_path
+          Name: ShortenedPath
+          Namespaces:
+            short_path: true
+          Queue Size: 100
+          Value: true
+      Enabled: true
       Name: LocalPlanner
     - Class: rviz/Group
       Displays:
@@ -267,55 +303,6 @@ Visualization Manager:
           Value: false
       Enabled: true
       Name: FrontierExplorer
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /firefly/voxblox_local_planner/graph
-      Name: MarkerArray
-      Namespaces:
-        edges: true
-        vertices: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /firefly/voxblox_local_planner/raw_path
-      Name: MarkerArray
-      Namespaces:
-        raw_path: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /firefly/voxblox_local_planner/occ_shield
-      Name: MarkerArray
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /firefly/voxblox_local_planner/free_shield
-      Name: MarkerArray
-      Namespaces:
-        free_shield: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /firefly/voxblox_local_planner/short_path
-      Name: MarkerArray
-      Namespaces:
-        short_path: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /firefly/voxblox_local_planner/trajectory
-      Name: MarkerArray
-      Namespaces:
-        trajectory: true
-      Queue Size: 100
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -351,18 +338,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.20707345008850098
-        Y: -3.8244504928588867
+        X: -1.2311887741088867
+        Y: -4.585844039916992
         Z: -3.1433319236384705e-6
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.5047963857650757
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 2.942838430404663
+      Yaw: 3.5428342819213867
     Saved: ~
 Window Geometry:
   Displays:
@@ -372,7 +359,7 @@ Window Geometry:
   Hide Right Dock: true
   PlanningPanel:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000019500000387fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003e00000387000000cb00fffffffb0000001a0050006c0061006e006e0069006e006700500061006e0065006c0300000000000000800000019700000156fb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d006100670065020000006a00000003000002c000000237000000010000010000000387fc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001a0050006c0061006e006e0069006e006700500061006e0065006c02000004fb000001bc000001970000014afb0000000a00560069006500770073000000003e00000387000000a500fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003be00000039fc0100000002fb0000000800540069006d00650100000000000003be0000026c00fffffffb0000000800540069006d00650100000000000004500000000000000000000002230000038700000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000019500000387fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003e00000387000000cb00fffffffb0000001a0050006c0061006e006e0069006e006700500061006e0065006c0200000000000000800000019700000156fb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d006100670065020000006a00000003000002c000000237000000010000010000000387fc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000001a0050006c0061006e006e0069006e006700500061006e0065006c02000004fb000001bc000001970000014afb0000000a00560069006500770073000000003e00000387000000a500fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000003be00000039fc0100000002fb0000000800540069006d00650100000000000003be0000026c00fffffffb0000000800540069006d00650100000000000004500000000000000000000002230000038700000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
