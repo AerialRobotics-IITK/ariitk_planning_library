@@ -37,16 +37,17 @@ class LocalPlanner {
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
         
-        void applyYawToTrajectory();
+        void applyYawToTrajectory(Trajectory& trajectory);
         bool checkForReplan();
-        void plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
-        void executePlan();
+        Trajectory plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void executePlan(const Trajectory& trajectory);
         void generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
-        void generateTrajectoryThroughWaypoints(const Path& waypoints);
+        Trajectory generateTrajectoryThroughWaypoints(const Path& waypoints);
         void convertPathToTrajectory(const Path& path, Trajectory& trajectory);
         inline double getMapDistanceAndGradient(const Eigen::Vector3d& point, Eigen::Vector3d* gradient) const {
             return pathfinder_.getMapDistanceAndGradient(point, gradient);
         }
+        void clear();
 
         Path waypoints_;
         Trajectory trajectory_;
@@ -56,11 +57,12 @@ class LocalPlanner {
         mav_planning::LocoSmoother smoother_;
 
         bool visualize_;
-        double last_yaw_;
         double robot_radius_;
         double voxel_size_;
         double sampling_dt_;
-        double command_publishing_dt_;
+
+        uint curr_waypt_;
+        size_t path_index_;
 
         ros::Publisher command_pub_;
         ros::Publisher traj_pub_;

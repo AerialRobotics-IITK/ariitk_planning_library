@@ -48,6 +48,7 @@ class PathFinder {
         void expandSamplingRegion(const double& size);
         void increaseSamplingDensity(const double& factor);
         void inflateRadius(const double& factor);
+        double getPathLength(const Path& path);
        
         // void visualizePaths();
         // void init(ros::NodeHandle& nh, ros::NodeHandle& nh_private); // need easier init
@@ -61,7 +62,6 @@ class PathFinder {
         void shortenPath();
         void findMaximalIndices(const uint& start, const uint& end, std::vector<bool>* map);
         bool isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
-        double getPathLength(const Path& path);
     
         // void createGraph();
         // Path evaluatePaths(const Paths& paths);

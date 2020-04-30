@@ -28,7 +28,7 @@ void PointSampler::expandRegion(const double& size) {
 PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private) 
     : sampler_()
     , server_(nh, nh_private)
-    , p_sample_(50)
+    , p_sample_(10)
     , expand_region_(false) 
     , expand_size_(5) 
     , inc_density_(false)
@@ -67,7 +67,7 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
         ROS_WARN("Plan failed! Adding more nodes!");
         increaseSamplingDensity(4.0);
         expandSamplingRegion(2.0);
-        createGraph(start_pt, end_pt);  // TODO: reuse over resample, consider connecting if disconnected.
+        createGraph(start_pt, end_pt);
         visualizer_.visualizeGraph("graph", graph_);
         searchPath(0, 1);
     }
@@ -80,8 +80,6 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
         path_ = short_path_;
     }
     else { path_ = raw_path_; }
-
-    // path_ = raw_path_;
 }
 
 void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -106,7 +104,7 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
         inflate_radius_ = false;
     }
 
-    uint max_samples = p_sample * (start - end).norm() * sampler_.getWidth() ;
+    uint max_samples = p_sample * (start - end).norm() * sampler_.getWidth() / voxel_size_;
     uint num_sample = 0;
 
     graph_.push_back(Node(new GraphNode(start, 0)));
@@ -139,7 +137,6 @@ void PathFinder::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d
             }
         }
     }
-
 }
 
 void PathFinder::searchPath(const uint& start_index, const uint& end_index) {
