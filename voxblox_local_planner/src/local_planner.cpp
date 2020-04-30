@@ -21,6 +21,7 @@ LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     smoother_.setResampleTrajectory(true);
     smoother_.setResampleVisibility(true);
     smoother_.setNumSegments(5);
+    smoother_.setVerbose(false);
 
     visualizer_.init(nh, nh_private);
     visualizer_.createPublisher("occ_shield");
@@ -43,15 +44,10 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     mav_msgs::EigenTrajectoryPoint waypoint;
     mav_msgs::eigenTrajectoryPointFromPoseMsg(msg, &waypoint);
 
-    pathfinder_.findPath(start_odom.position_W, waypoint.position_W);
-    waypoints_ = pathfinder_.getPath();
-    generateTrajectoryThroughWaypoints(waypoints_);
+    plan(start_odom.position_W, waypoint.position_W);
+    executePlan();
+    
     ros::Rate loop_rate(10);
-
-    trajectory_msgs::MultiDOFJointTrajectory traj_msg;
-    traj_msg.header.stamp = ros::Time::now();
-    mav_msgs::msgMultiDofJointTrajectoryFromEigen(trajectory_, &traj_msg);
-    traj_pub_.publish(traj_msg);
     
     while(ros::ok() && norm(odometry_.pose.pose.position, trajectory_.back().position_W) > 0.2) {
         ros::spinOnce();
@@ -63,8 +59,10 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
             command_pub_.publish(stop_msg);
 
             Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
-            replan(curr_pos, waypoints_[curr_index_]);
-            break;
+            pathfinder_.inflateRadius(2.0);
+            plan(curr_pos, trajectory_.back().position_W);
+            ROS_INFO("Replanned!");
+            executePlan();
         }
         loop_rate.sleep();
     }
@@ -148,7 +146,6 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
 // }
 
 bool LocalPlanner::checkForReplan() {
-    // return false;
     bool need_replan = false;
     std::vector<Eigen::Vector3d> free_points;
     std::vector<Eigen::Vector3d> occ_points;
@@ -168,16 +165,22 @@ bool LocalPlanner::checkForReplan() {
     return need_replan;
 }
 
-void LocalPlanner::replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-    pathfinder_.inflateRadius(2.0);
+void LocalPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
     pathfinder_.findPath(start, end);
     waypoints_ = pathfinder_.getPath();
     generateTrajectoryThroughWaypoints(waypoints_);
-    curr_index_ = 0;
-    ROS_INFO("Replanned!");
+}
+
+void LocalPlanner::executePlan() {
+    trajectory_msgs::MultiDOFJointTrajectory traj_msg;
+    traj_msg.header.stamp = ros::Time::now();
+    mav_msgs::msgMultiDofJointTrajectoryFromEigen(trajectory_, &traj_msg);
+    traj_pub_.publish(traj_msg);
 }
 
 void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
+    waypoints_.clear();
+    trajectory_.clear();
     for(auto& pose : msg.poses) {
         geometry_msgs::PoseStamped msg;
         msg.header.stamp = ros::Time::now();
@@ -188,7 +191,7 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
 
 void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
     trajectory_.clear();
-    path_index_ = 0;
+    // path_index_ = 0;
     mav_msgs::EigenTrajectoryPoint start_pt, end_pt;
     start_pt.position_W = start;
     end_pt.position_W = end;
@@ -203,7 +206,7 @@ void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& sta
 
 void LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoints) {
     trajectory_.clear();
-    path_index_ = 0;
+    // path_index_ = 0;
     if(waypoints.empty()) { return; }
 
     Trajectory eigen_waypts;
@@ -216,6 +219,12 @@ void LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoints) {
     }
 
     mav_trajectory_generation::Trajectory gen_traj;
+    
+    ros::spinOnce();
+    eigen_waypts[0].orientation_W_B = mav_msgs::quaternionFromMsg(odometry_.pose.pose.orientation);
+    eigen_waypts[0].velocity_W = mav_msgs::vector3FromMsg(odometry_.twist.twist.linear);
+    eigen_waypts[0].angular_velocity_W = mav_msgs::vector3FromMsg(odometry_.twist.twist.angular);
+
     bool success = smoother_.getTrajectoryBetweenWaypoints(eigen_waypts, &gen_traj);
     if(success) { 
         mav_trajectory_generation::sampleWholeTrajectory(gen_traj, sampling_dt_, &trajectory_); 

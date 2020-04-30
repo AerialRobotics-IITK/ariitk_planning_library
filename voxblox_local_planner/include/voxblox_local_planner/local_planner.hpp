@@ -39,20 +39,21 @@ class LocalPlanner {
         
         void applyYawToTrajectory();
         bool checkForReplan();
-        void replan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        void executePlan();
         void generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void generateTrajectoryThroughWaypoints(const Path& waypoints);
-        uint getTrajectorySegment(const Eigen::Vector3d& end_pt);
         void convertPathToTrajectory(const Path& path, Trajectory& trajectory);
         inline double getMapDistanceAndGradient(const Eigen::Vector3d& point, Eigen::Vector3d* gradient) const {
             return pathfinder_.getMapDistanceAndGradient(point, gradient);
         }
+        // uint getTrajectorySegment(const Eigen::Vector3d& end_pt);
 
-        uint curr_index_;
+        // uint curr_index_;
         Path waypoints_;
         Trajectory trajectory_;
-        Trajectory segment_;
-        uint path_index_;
+        // Trajectory segment_;
+        // uint path_index_;
 
         PathFinder pathfinder_;
         PathVisualizer visualizer_;

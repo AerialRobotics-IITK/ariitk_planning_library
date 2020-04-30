@@ -13,6 +13,7 @@ Panels:
         - /GlobalPlanner1/GlobalPath1/Namespaces1
         - /GlobalPlanner1/SparseGraph1
         - /GlobalPlanner1/SparseGraph1/Namespaces1
+        - /MarkerArray7
       Splitter Ratio: 0.5
     Tree Height: 752
   - Class: rviz/Selection
@@ -215,7 +216,7 @@ Visualization Manager:
             {}
           Queue Size: 100
           Value: true
-      Enabled: true
+      Enabled: false
       Name: LocalPlanner
     - Class: rviz/Group
       Displays:
@@ -316,6 +317,14 @@ Visualization Manager:
         trajectory: true
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /firefly/voxblox_local_planner/segment
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -344,25 +353,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 17.098169326782227
+      Distance: 22.74388885498047
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 6.072033405303955
-        Y: -4.556238174438477
-        Z: -1.8601970168674598e-6
+        X: -0.7783416509628296
+        Y: -4.073247909545898
+        Z: -3.1433319236384705e-6
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5597963333129883
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: ThirdPersonFollower (rviz)
-      Yaw: 3.392848253250122
+      Yaw: 3.0778393745422363
     Saved: ~
 Window Geometry:
   Displays:
