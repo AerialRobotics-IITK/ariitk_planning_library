@@ -19,8 +19,11 @@ typedef mav_msgs::EigenTrajectoryPointVector Trajectory;
 class LocalPlanner {
     public:
         LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
+        void setConstantYaw(const double& yaw) { const_yaw_ = yaw; }
     
     private:
+        enum class YawPolicy{ POINT_FACING, ANTICIPATE_VELOCITY, FOLLOW_VELOCITY, CONSTANT };
+
         static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
             return std::sqrt(std::pow(p1.x-p2.x,2) + std::pow(p1.y-p2.y, 2) + std::pow(p1.z-p2.z, 2));
         }
@@ -37,7 +40,7 @@ class LocalPlanner {
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
         
-        void applyYawToTrajectory(Trajectory& trajectory);
+        void applyYawToTrajectory(Trajectory& trajectory, const YawPolicy& policy = YawPolicy::ANTICIPATE_VELOCITY);
         bool checkForReplan(const Trajectory& trajectory);
         Trajectory plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void executePlan(const Trajectory& trajectory);
@@ -60,6 +63,7 @@ class LocalPlanner {
         double robot_radius_;
         double voxel_size_;
         double sampling_dt_;
+        double const_yaw_;
 
         uint curr_waypt_;
         size_t path_index_;

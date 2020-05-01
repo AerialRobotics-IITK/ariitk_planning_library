@@ -5,7 +5,8 @@
 namespace ariitk::local_planner {
 
 LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private) 
-    : pathfinder_(nh, nh_private) {
+    : pathfinder_(nh, nh_private) 
+    , const_yaw_(0) {
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("robot_radius", robot_radius_);
     nh_private.getParam("voxel_size", voxel_size_);
@@ -159,7 +160,7 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
             command_pub_.publish(stop_msg);
 
             Eigen::Vector3d curr_pos(odometry_.pose.pose.position.x, odometry_.pose.pose.position.y, odometry_.pose.pose.position.z);
-            pathfinder_.inflateRadius(2.0);
+            pathfinder_.inflateRadius(2.0); // TODO: Blacklist occupied region from sampling
             trajectory_ = plan(curr_pos, trajectory_.back().position_W); // what if trajectory_.back() is also occupied? TODO: Nearest Free Goal
             path_index_ = pub_index_ = 0;
             ROS_INFO("Replanned!");
@@ -217,17 +218,73 @@ Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoint
     return traj;
 }
 
-void LocalPlanner::applyYawToTrajectory(Trajectory& trajectory) {
+void LocalPlanner::applyYawToTrajectory(Trajectory& trajectory, const YawPolicy& policy) {
     if(trajectory.size() < 2) { return; }
-    // TODO: Antipicate Velocity Vector policy
+    double last_yaw = trajectory.front().getYaw();
 
-    for(auto i = 0; i < trajectory.size() - 1; i++) {
-        Eigen::Vector3d heading = trajectory[i+1].position_W - trajectory[i].position_W;
-        double desired_yaw = 0.0;
-        if (std::fabs(heading.x()) > 1e-4 || std::fabs(heading.y()) > 1e-4) {
-           desired_yaw = std::atan2(heading.y(), heading.x());
+    if(policy == YawPolicy::POINT_FACING) {
+        for(auto i = 0; i < trajectory.size() - 1; i++) {
+            Eigen::Vector3d heading = trajectory[i+1].position_W - trajectory[i].position_W;
+            double desired_yaw = 0.0;
+            if (std::fabs(heading.x()) > 1e-4 || std::fabs(heading.y()) > 1e-4) {
+                desired_yaw = std::atan2(heading.y(), heading.x());
+            } else {
+                desired_yaw = last_yaw;
+            }
+            trajectory[i].setFromYaw(desired_yaw);
+            last_yaw = desired_yaw;
         }
-        trajectory[i].setFromYaw(desired_yaw);
+    } else if(policy == YawPolicy::FOLLOW_VELOCITY) {
+        const double minVelocityNorm = 0.1;
+        for(auto i = 0; i < trajectory.size(); i++) {
+            Eigen::Vector3d velocity_xy = trajectory[i].velocity_W;
+            velocity_xy.z() = 0;
+            if(velocity_xy.norm() > minVelocityNorm) {
+                double desired_yaw = atan2(velocity_xy.y(), velocity_xy.x());
+                trajectory[i].setFromYaw(desired_yaw);
+                last_yaw = desired_yaw;
+            } else {
+                double desired_yaw = last_yaw;
+                auto j = i + 1;
+                while(j < trajectory.size() && velocity_xy.norm() < minVelocityNorm) {
+                    velocity_xy = trajectory[j].velocity_W;
+                    velocity_xy.z() = 0; j++;
+                }
+                if(velocity_xy.norm() > minVelocityNorm) {
+                    desired_yaw = atan2(velocity_xy.y(), velocity_xy.x());
+                } 
+                trajectory[i].setFromYaw(desired_yaw);
+                last_yaw = desired_yaw;
+            }
+        }
+    } else if(policy == YawPolicy::ANTICIPATE_VELOCITY) {
+        const double minVelocityNorm = 0.1;
+        double initial_yaw = last_yaw;
+        for(auto i = trajectory.size(); i > 0; i--) {
+            Eigen::Vector3d velocity_xy = trajectory[i].velocity_W;
+            velocity_xy.z() = 0;
+            if(velocity_xy.norm() > minVelocityNorm) {
+                double desired_yaw = atan2(velocity_xy.y(), velocity_xy.x());
+                trajectory[i].setFromYaw(desired_yaw);
+                last_yaw = desired_yaw;
+            } else {
+                double desired_yaw = last_yaw;
+                for(auto j = i; j > 0 && velocity_xy.norm() < minVelocityNorm; j--) {
+                    velocity_xy = trajectory[j-1].velocity_W;
+                    velocity_xy.z() = 0;
+                }
+                if(velocity_xy.norm() > minVelocityNorm) {
+                    desired_yaw = atan2(velocity_xy.y(), velocity_xy.x());
+                } 
+                trajectory[i].setFromYaw(desired_yaw);
+                last_yaw = desired_yaw;
+            }
+        }
+        trajectory[0].setFromYaw(initial_yaw);
+    } else if(policy == YawPolicy::CONSTANT) {
+        for(auto i = 0; i < trajectory.size(); i++) {
+            trajectory[i].setFromYaw(const_yaw_);
+        }
     }
 }
 
