@@ -188,15 +188,19 @@ void FrontierEvaluator::clusterFrontiers() {
         frontiers_.push_back(frontier);
 
         ariitk_planning_msgs::Frontier frontier_msg;
-        frontier_msg.center.x = frontier.center.x();
-        frontier_msg.center.y = frontier.center.y();
-        frontier_msg.center.z = frontier.center.z();
-        frontier_msg.num_points = frontier.points.size();
+        convertFrontierToMsg(frontier, frontier_msg);
         frontiers_msg_.frontiers.push_back(frontier_msg);
     }
 }
 
-void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArray *markers) {
+void FrontierEvaluator::convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg) {
+    msg.center.x = frontier.center.x();
+    msg.center.y = frontier.center.y();
+    msg.center.z = frontier.center.z();
+    msg.num_points = frontier.points.size();
+}
+
+void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArray* markers) {
     CHECK_NOTNULL(markers);
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id_;
@@ -233,7 +237,7 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     markers->markers.push_back(center);
 }
 
-void FrontierEvaluator::createMarkerFromVoxelStates(visualization_msgs::MarkerArray *markers) {
+void FrontierEvaluator::createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers) {
     CHECK_NOTNULL(markers);
     size_t vps = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
     size_t num_voxels_per_block = vps * vps * vps;

@@ -35,6 +35,7 @@ class FrontierEvaluator {
         };
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
         void clusterFrontiers();
+        void convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg);
 
         std::vector<Frontier> frontiers_;
         std::vector<Eigen::Vector3d> neighbor_voxels_;
