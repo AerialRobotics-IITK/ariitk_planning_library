@@ -111,14 +111,13 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
 
   double start_distance = 0.0;
   if (getMapDistance(start_pose.position_W, start_distance) && start_distance < constraints_.robot_radius) {
-  ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
-  Eigen::Vector3d new_start_pos;
-  if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
-    ROS_ERROR("No free points near start pose, and start pose is occupied!");
-    return false;
-  }
-  start_pose.position_W = new_start_pos;
-  return false;
+    ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
+    Eigen::Vector3d new_start_pos;
+    if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
+      ROS_ERROR("No free points near start pose, and start pose is occupied!");
+      return false;
+    }
+    start_pose.position_W = new_start_pos;
   }
 
   voxblox::Point start_point =
