@@ -39,12 +39,12 @@ class SkeletonGlobalPlanner {
       const voxblox::AlignedVector<voxblox::Point>& coordinate_path,
       mav_msgs::EigenTrajectoryPointVector& path);
 
-  double getMapDistance(const Eigen::Vector3d& position) const;
-  double getMapDistanceAndGradient(const Eigen::Vector3d& position, Eigen::Vector3d& gradient) const;
+  bool getMapDistance(const Eigen::Vector3d& position, double& distance);
+  bool getMapDistanceAndGradient(const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient);
 
   void skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf_layer);
 
-  bool getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, Eigen::Vector3d& new_pos) const;
+  bool getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, Eigen::Vector3d& new_pos);
 
  private:
   ros::NodeHandle nh_;
