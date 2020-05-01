@@ -183,13 +183,27 @@ bool FrontierEvaluator::getVoxelWeight(const Eigen::Vector3d& point, double& wei
 void FrontierEvaluator::clusterFrontiers() {
     while(!hash_map_.empty()) {
         Frontier frontier;
-        neighbour_coords(hash_map_.begin()->first, frontier);
+        findNeighbours(hash_map_.begin()->first, frontier);
         if(frontier.points.size() < min_frontier_size_) { continue; }
         frontiers_.push_back(frontier);
 
         ariitk_planning_msgs::Frontier frontier_msg;
         convertFrontierToMsg(frontier, frontier_msg);
         frontiers_msg_.frontiers.push_back(frontier_msg);
+    }
+}
+
+void FrontierEvaluator::findNeighbours(const std::string& key, Frontier& frontier) {
+    auto point = hash_map_.at(key);
+    hash_map_.erase(key);
+    frontier.center = (frontier.center * frontier.points.size() + point) / 
+                        (frontier.points.size() + 1);
+    frontier.points.push_back(point);
+    for (auto& next_point: planar_neighbor_voxels_) {
+        auto str = std::to_string(int((point.x() + next_point.x())/voxel_size_)) + "," + std::to_string(int((point.y() + next_point.y())/voxel_size_));
+        if (hash_map_.find(str) != hash_map_.end()) {
+            findNeighbours(str, frontier);
+        }
     }
 }
 
