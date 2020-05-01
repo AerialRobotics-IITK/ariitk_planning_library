@@ -11,8 +11,8 @@ frame_id: world                     # Global fixed frame id.
 local_frame_id: world               # Frame name for the quadrotor base.
 
 # robot constraints
-robot_radius: 0.45                  # Robot sphere radius, to be used for planning,  in metres.
-traversability_radius: 0.45         # Radius in metres, of the space around the robot to be considered as occupied.
+robot_radius: 0.45                  # Robot sphere radius, to be used for planning,  in *meters*.
+traversability_radius: 0.45         # Radius in *meters*, of the space around the robot to be considered as occupied.
                                     # Recommended value: equal to robot_radius     
 
 # esdf server params
@@ -22,25 +22,25 @@ publish_pointclouds: false          # If true the tsdf and esdf (if generated) i
 publish_slices: false               # Whether to publish TSDF and ESDF pointcloud slices at the height specified by $slice_level
 publish_traversable: false          # Whether to display a traversability pointcloud from the ESDF server.
 publish_pointclouds_on_update: false
-update_mesh_every_n_sec: 0.0        # Rate at which the mesh topic will be published to, a value of 0 disables. 
+update_mesh_every_n_sec: 0.0        # Rate at which the mesh topic will be published to,in *seconds*, a value of 0 disables. 
                                     # This will not trigger any other mesh operations, such as generating a ply file.
-update_esdf_every_n_sec: 0.0       # How often the ESDF map should be updated
-publish_map_every_n_sec: 0.0        # Rate at which the TSDF and ESDF maps are published, if they are published.
+update_esdf_every_n_sec: 0.0        # How often the ESDF map should be updated, in *seconds*
+publish_map_every_n_sec: 0.0        # Rate at which the TSDF and ESDF maps are published, if they are published, in *seconds*.
 
 # global planner params
 generate_by_layer_neighbors: true   # Whether to generate vertices/edges by number of basis points (false, default)
                                     # or number of neighbors on the discretized medial axis (true).
-min_separation_angle: 0.78          # Minimum separation angle between two edges of a sparse graph node, in radians
+min_separation_angle: 0.78          # Minimum separation angle between two edges of a sparse graph node, in *radians*
                                     # If using full euclidean: 0.78 (45 degrees), If using quasi-Euclidean: 1.57 (90 degrees)
 
 # local planner params
-replan_dt: 0.1                      # Time to wait for before replanning, in seconds.
-command_publishing_dt: 0.25         # Time between each command published by the local planner, in seconds.
-replan_lookahead_sec: 1.0           # No. of seconds ahead to consider if the need for replanning arises.
+replan_dt: 0.1                      # Time to wait for before replanning, in *seconds*.
+command_publishing_dt: 0.25         # Time between each command published by the local planner, in *seconds*.
+replan_lookahead_sec: 1.0           # No. of *seconds* ahead to consider if the need for replanning arises.
 mpc_prediction_horizon: 30          # No. of timesteps to plan ahead for
-planning_horizon_m: 20.0            # Planning horizon, in metres.
-v_max: 2.0                          # Max allowed velocity, in metres per second.
-a_max: 2.0                          # Max allowed accelration, in metres per seconds squared.
+planning_horizon_m: 20.0            # Planning horizon, in *meters*.
+v_max: 2.0                          # Max allowed velocity, in *meters per second*.
+a_max: 2.0                          # Max allowed accelration, in *meters per seconds squared*.
 autostart: true                     # Whether to auto-start publishing any new path or wait for start service call.
 use_shotgun: false                  # Find the intermediate point by shotgun firing if the planning horizon is occupied
 plan_to_start: true                 # Whether to start planning at the current odometry.
