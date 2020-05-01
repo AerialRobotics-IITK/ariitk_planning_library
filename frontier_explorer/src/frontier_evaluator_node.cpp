@@ -14,7 +14,10 @@ int main(int argc, char** argv) {
 
     FrontierEvaluator evaluator(nh, nh_private);
 
-    ros::Rate loop_rate(10);
+    double update_rate = 10.0;
+    nh_private.getParam("update_frontiers_every_n_sec", update_rate);
+
+    ros::Rate loop_rate(update_rate);
     
     while(ros::ok()) {
         ros::spinOnce();

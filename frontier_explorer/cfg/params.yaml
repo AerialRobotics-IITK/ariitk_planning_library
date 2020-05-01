@@ -10,3 +10,4 @@ slice_level: 1.0                          # Height at which the ESDF slice is pr
 min_frontier_size: 3                      # Minimum points required in a frontier
 upper_range: -0.2                         # Max height of points with respect to slice level, in *meters*
 lower_range: 0.8                          # Min height of points with respect to slice level, in *meters*
+update_frontiers_every_n_sec: 1.0         # How often frontiers are calculated and processed, in *seconds*
