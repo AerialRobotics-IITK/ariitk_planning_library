@@ -63,7 +63,6 @@ class FrontierEvaluator {
         double block_size_;
         double checking_dist_;
         double surface_distance_threshold_factor_;
-        double frontier_length_factor_;
         double slice_level_;
         double upper_range_;
         double lower_range_;

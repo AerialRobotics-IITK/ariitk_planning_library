@@ -9,7 +9,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("visualize", visualize_);
     nh_private.getParam("frame_id", frame_id_);
     nh_private.getParam("surface_distance_threshold_factor", surface_distance_threshold_factor_);
-    nh_private.getParam("frontier_length_factor", frontier_length_factor_);
     nh_private.getParam("slice_level", slice_level_);
     nh_private.getParam("upper_range", upper_range_);
     nh_private.getParam("lower_range", lower_range_);
