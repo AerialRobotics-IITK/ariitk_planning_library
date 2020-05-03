@@ -27,4 +27,6 @@
   <depend>voxblox_ros</depend>
   <depend>voxblox_skeleton</depend>
   <depend>voxblox_planning_common</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_srvs</depend>
 </package>
