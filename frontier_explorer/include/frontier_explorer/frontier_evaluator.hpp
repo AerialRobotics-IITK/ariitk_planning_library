@@ -37,6 +37,9 @@ class FrontierEvaluator {
         void clusterFrontiers();
         void convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg);
         void findNeighbours(const std::string& key, Frontier& frontier);
+        inline std::string getHash(const Eigen::Vector3d& point) {
+            return std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y() / voxel_size_));
+        }
 
         std::vector<Frontier> frontiers_;
         std::vector<Eigen::Vector3d> neighbor_voxels_;

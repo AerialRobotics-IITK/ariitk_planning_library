@@ -116,9 +116,8 @@ void FrontierEvaluator::findFrontiers() {
         for (size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
             if (isFrontierVoxel(coord)){
-                std::string hash = std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y()/voxel_size_));
                 coord(2,0) = slice_level_;
-                hash_map_[hash] = coord;
+                hash_map_[getHash(coord)] = coord;
             }
         }
     }
@@ -200,9 +199,9 @@ void FrontierEvaluator::findNeighbours(const std::string& key, Frontier& frontie
                         (frontier.points.size() + 1);
     frontier.points.push_back(point);
     for (auto& next_point: planar_neighbor_voxels_) {
-        auto str = std::to_string(int((point.x() + next_point.x())/voxel_size_)) + "," + std::to_string(int((point.y() + next_point.y())/voxel_size_));
-        if (hash_map_.find(str) != hash_map_.end()) {
-            findNeighbours(str, frontier);
+        auto hash = getHash(point + next_point);
+        if (hash_map_.find(hash) != hash_map_.end()) {
+            findNeighbours(hash, frontier);
         }
     }
 }
