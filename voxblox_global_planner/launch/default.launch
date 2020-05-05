@@ -10,9 +10,9 @@
     </node>
   </group>
 
-  <!-- <include file="$(find frontier_explorer)/launch/default.launch">
+  <include file="$(find frontier_explorer)/launch/default.launch">
     <arg name="mav_name"      value="$(arg mav_name)"/>
-  </include> -->
+  </include>
 
   <include file="$(find voxblox_local_planner)/launch/default.launch">
     <arg name="mav_name"      value="$(arg mav_name)"/>

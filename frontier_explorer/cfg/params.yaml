@@ -11,3 +11,4 @@ slice_level: 1.0                          # Height at which the ESDF slice is pr
 min_frontier_size: 3                      # Minimum points required in a frontier
 upper_range: -0.2                          # Only consider those points for frontiers 
 lower_range: 0.8                          # whose height lies in $slice_level +- $height_range
+voxel_size: 0.2

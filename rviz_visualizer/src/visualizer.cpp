@@ -60,7 +60,6 @@ void Visualizer::visualizePath(const std::string& topic_name, const std::vector<
     publisher_map_[topic_name].publish(markers);    // protect this 
 }
 
-
 void Visualizer::visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
     if(points.empty()) { return; }
@@ -153,7 +152,7 @@ void Visualizer::visualizePoint(const std::string& topic_name, const Eigen::Vect
     publisher_map_[topic_name].publish(markers);    // protect this 
 }
 
-void Visualizer::visualizeGraph(const std::string& topic_name, const ariitk::local_planner::Graph& graph,
+void Visualizer::visualizeGraph(const std::string& topic_name, const Graph& graph,
                         const std::string& frame_id, const ColorType& vertex_color, const ColorType& edge_color, const double& size_factor) {
     if(graph.empty()) { return; }
     visualization_msgs::MarkerArray markers;

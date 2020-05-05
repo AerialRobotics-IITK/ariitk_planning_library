@@ -21,4 +21,5 @@
   <depend>voxblox_ros</depend>
   <depend>mav_planning_common</depend>
   <depend>ariitk_planning_msgs</depend>
+  <depend>rviz_visualizer</depend>
 </package>

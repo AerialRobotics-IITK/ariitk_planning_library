@@ -6,13 +6,14 @@
 #include <voxblox_ros/esdf_server.h>
 #include <voxblox/core/tsdf_map.h>
 
-#include <voxblox_local_planner/path_visualizer.hpp>
+#include <rviz_visualizer/visualizer.hpp>
 #include <voxblox_local_planner/graph_def.hpp>
 
 namespace ariitk::local_planner {
 
 typedef std::vector<Eigen::Vector3d> Path;
 typedef std::vector<Path> Paths;
+typedef ariitk::rviz_visualizer::Visualizer Visualizer;
 
 class PointSampler {
     public:
@@ -62,6 +63,7 @@ class PathFinder {
         void shortenPath();
         void findMaximalIndices(const uint& start, const uint& end, std::vector<bool>* map);
         bool isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        ariitk::rviz_visualizer::Graph convertGraph(const Graph& graph);
     
         // void createGraph();
         // Path evaluatePaths(const Paths& paths);
@@ -110,7 +112,7 @@ class PathFinder {
         double inflate_factor_;
 
         PointSampler sampler_;
-        PathVisualizer visualizer_;
+        Visualizer visualizer_;
 };
 
 } // namespace ariitk::local_planner

@@ -26,5 +26,6 @@
   <depend>visualization_msgs</depend>
   <depend>voxblox_ros</depend>
   <depend>voxblox_skeleton</depend>
+  <depend>rviz_visualizer</depend>
   <depend>voxblox_planning_common</depend>
 </package>

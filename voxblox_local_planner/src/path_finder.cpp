@@ -60,7 +60,7 @@ PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
 
 void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt) {
     createGraph(start_pt, end_pt);
-    visualizer_.visualizeGraph("graph", graph_);
+    visualizer_.visualizeGraph("graph", convertGraph(graph_));
 
     searchPath(0, 1);
     if(raw_path_.empty()) { 
@@ -68,15 +68,15 @@ void PathFinder::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d
         increaseSamplingDensity(4.0);
         expandSamplingRegion(2.0);
         createGraph(start_pt, end_pt);
-        visualizer_.visualizeGraph("graph", graph_);
+        visualizer_.visualizeGraph("graph", convertGraph(graph_));
         searchPath(0, 1);
     }
 
-    visualizer_.visualizePath("raw_path", raw_path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
+    visualizer_.visualizePath("raw_path", raw_path_, "world", Visualizer::ColorType::TEAL, 0.05);
 
     shortenPath();
     if(!short_path_.empty()){
-        visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.1);
+        visualizer_.visualizePath("short_path", short_path_, "world", Visualizer::ColorType::GREEN, 0.1);
         path_ = short_path_;
     }
     else { path_ = raw_path_; }
@@ -261,6 +261,19 @@ void PathFinder::increaseSamplingDensity(const double& factor) {
 void PathFinder::inflateRadius(const double& factor) {
     inflate_radius_ = true;
     inflate_factor_ = factor;
+}
+
+ariitk::rviz_visualizer::Graph PathFinder::convertGraph(const Graph& graph) {
+    ariitk::rviz_visualizer::Graph ret_graph;
+    for(auto& node : graph) {
+        ret_graph.push_back(ariitk::rviz_visualizer::Node(new ariitk::rviz_visualizer::GraphNode(node->getPosition(), node->getID())));
+    }
+    for(auto& node : graph) {
+        for(auto& neigh : node->getNeighbours()) {
+            ret_graph[node->getID()]->addNeighbour(ret_graph[neigh->getID()]);
+        }
+    }
+    return ret_graph;
 }
 
 // Path PathFinder::evaluatePaths(const Paths& paths) {
@@ -534,7 +547,7 @@ void PathFinder::inflateRadius(const double& factor) {
 //         if(getMapDistance(point) <= threshold) { return false; }
 //     }
 //     ROS_WARN_STREAM(cast.size());
-//     visualizer_.visualizePath("cast", cast, "world", PathVisualizer::ColorType::PINK, 0.1);
+//     visualizer_.visualizePath("cast", cast, "world", Visualizer::ColorType::PINK, 0.1);
 //     return true;
 // }
 
@@ -628,8 +641,8 @@ void PathFinder::inflateRadius(const double& factor) {
 
 // void PathFinder::visualizePaths() {
 //     if(!visualize_) { return; }
-//     // visualizer_.visualizePaths("raw_paths", raw_paths_, "world", PathVisualizer::ColorType::TEAL);
-//     visualizer_.visualizePath("best_path", best_candidate_path_, "world", PathVisualizer::ColorType::RED, 1);
+//     // visualizer_.visualizePaths("raw_paths", raw_paths_, "world", Visualizer::ColorType::TEAL);
+//     visualizer_.visualizePath("best_path", best_candidate_path_, "world", Visualizer::ColorType::RED, 1);
 //     visualizer_.visualizeGraph("graph", graph_);
 // }
 

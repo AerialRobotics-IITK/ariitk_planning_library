@@ -56,7 +56,7 @@ class LocalPlanner {
         Trajectory trajectory_;
 
         PathFinder pathfinder_;
-        PathVisualizer visualizer_;
+        Visualizer visualizer_;
         mav_planning::LocoSmoother smoother_;
 
         bool visualize_;

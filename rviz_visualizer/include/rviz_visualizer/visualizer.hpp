@@ -6,8 +6,6 @@
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <Eigen/Eigen>
 
-#include <voxblox_local_planner/graph_def.hpp>
-
 namespace ariitk::rviz_visualizer {
 
 class Color : public std_msgs::ColorRGBA {
@@ -35,6 +33,39 @@ class Color : public std_msgs::ColorRGBA {
     static const Color Pink() { return Color(1.0, 0.0, 0.5); }
 };
 
+class GraphNode {
+    public:
+        enum class NodeState{NEW, OPEN, CLOSE};
+        GraphNode(const Eigen::Vector3d& pos, const uint& id) 
+            : pos_(pos)
+            , id_(id)
+            , state_(NodeState::NEW) {}
+        typedef std::shared_ptr<GraphNode> Ptr;
+        uint getID() { return id_; }
+        std::vector<GraphNode::Ptr> getNeighbours() { return neighbours_; }
+        uint getNumNeighbours() { return neighbours_.size(); }
+        Eigen::Vector3d getPosition() { return pos_; }
+        void setPosition(const Eigen::Vector3d& point) { pos_ = point; }
+        void addNeighbour(const GraphNode::Ptr& node) { neighbours_.push_back(node); }
+        void deleteNeighbour(const uint& id) { 
+            for(auto it = neighbours_.begin(); it != neighbours_.end(); it++) {
+                if(id == (*it)->getID()) {
+                    neighbours_.erase(it);
+                    return;
+                }
+            }
+        }
+
+    private:
+        std::vector<GraphNode::Ptr> neighbours_;
+        Eigen::Vector3d pos_;
+        NodeState state_;
+        uint id_;
+};
+
+typedef GraphNode::Ptr Node;
+typedef std::vector<Node> Graph;
+
 class Visualizer {
     public:
         void init(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
@@ -44,7 +75,7 @@ class Visualizer {
                        const std::string& frame_id = "world", const ColorType& color = ColorType::PINK, const double& size_factor = 0.5);
         void visualizePaths(const std::string& topic_name, const std::vector<std::vector<Eigen::Vector3d>>& paths, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::PINK, const double& size_factor = 0.5);
-        void visualizeGraph(const std::string& topic_name, const ariitk::local_planner::Graph& graph, const std::string& frame_id = "world",
+        void visualizeGraph(const std::string& topic_name, const Graph& graph, const std::string& frame_id = "world",
                         const ColorType& vertex_color = ColorType::ORANGE, const ColorType& edge_color = ColorType::BLUE, const double& size_factor = 0.5);
         void visualizePoint(const std::string& topic_name, const Eigen::Vector3d& point, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);

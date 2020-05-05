@@ -3,7 +3,7 @@
 using namespace ariitk::frontier_explorer;
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "frontier_evaluator");
+    ros::init(argc, argv, "frontier_explorer");
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 

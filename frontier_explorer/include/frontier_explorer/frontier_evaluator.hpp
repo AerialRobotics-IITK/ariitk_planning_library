@@ -7,12 +7,13 @@
 #include <mav_planning_common/physical_constraints.h>
 #include <Eigen/Core>
 
+#include <rviz_visualizer/visualizer.hpp>
 #include <ariitk_planning_msgs/Frontiers.h>
-#include <frontier_explorer/frontier_visualizer.hpp>
 
 namespace ariitk::frontier_explorer {
 
 enum class VoxelState{OCCUPIED, FREE, UNKNOWN};
+typedef ariitk::rviz_visualizer::Visualizer Visualizer;
 
 class FrontierEvaluator {
     public:
@@ -75,7 +76,7 @@ class FrontierEvaluator {
 
         std::string frame_id_;
 
-        FrontierVisualizer visualizer_;
+        Visualizer visualizer_;
         
         ariitk_planning_msgs::Frontiers frontiers_msg_;
 };

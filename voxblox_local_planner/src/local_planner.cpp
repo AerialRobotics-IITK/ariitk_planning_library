@@ -89,8 +89,8 @@ bool LocalPlanner::checkForReplan(const Trajectory& segment) {
     need_replan = (occupied > 0);
 
     if(visualize_) {
-        visualizer_.visualizePoints("occupied_path", occ_points, "world", PathVisualizer::ColorType::RED, 1);
-        visualizer_.visualizePoints("free_path", free_points, "world", PathVisualizer::ColorType::GREEN, 0.5);
+        visualizer_.visualizePoints("occupied_path", occ_points, "world", Visualizer::ColorType::RED, 1);
+        visualizer_.visualizePoints("free_path", free_points, "world", Visualizer::ColorType::GREEN, 0.5);
     }
 
     return need_replan;
@@ -182,7 +182,7 @@ void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& sta
         convertPathToTrajectory(dummy_path, trajectory_);
     }
     applyYawToTrajectory(trajectory_);
-    if(visualize_) { visualizer_.visualizeTrajectory("trajectory", trajectory_, "world", PathVisualizer::ColorType::BLACK, 0.2); }
+    if(visualize_) { visualizer_.visualizeTrajectory("trajectory", trajectory_, "world", Visualizer::ColorType::BLACK, 0.2); }
 }
 
 Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoints) {
@@ -196,7 +196,7 @@ Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoint
         traj = eigen_waypts; 
         applyYawToTrajectory(traj);
         if(visualize_) {
-            visualizer_.visualizeTrajectory("trajectory", traj, "world", PathVisualizer::ColorType::BLACK, 0.2);
+            visualizer_.visualizeTrajectory("trajectory", traj, "world", Visualizer::ColorType::BLACK, 0.2);
         }
         return traj;
     }
@@ -213,7 +213,7 @@ Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoint
 
     applyYawToTrajectory(traj);
     if(visualize_) {
-        visualizer_.visualizeTrajectory("trajectory", traj, "world", PathVisualizer::ColorType::BLACK, 0.2);
+        visualizer_.visualizeTrajectory("trajectory", traj, "world", Visualizer::ColorType::BLACK, 0.2);
     }
     return traj;
 }

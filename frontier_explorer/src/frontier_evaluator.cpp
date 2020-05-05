@@ -3,8 +3,7 @@
 namespace ariitk::frontier_explorer {
 
 FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
-    :  esdf_server_(nh, nh_private)
-    ,  visualizer_(nh, nh_private) {
+    :  esdf_server_(nh, nh_private) {
     
     nh_private.getParam("accurate_frontiers", accurate_frontiers_);
     nh_private.getParam("checking_distance", checking_dist_);
@@ -18,8 +17,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("min_frontier_size", min_frontier_size_);
     
     CHECK(esdf_server_.getTsdfMapPtr());
-
-    visualizer_.setTsdfLayerPtr(esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr());
 
     constraints_.setParametersFromRos(nh_private);
     esdf_server_.setTraversabilityRadius(constraints_.robot_radius);
@@ -90,6 +87,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -2*vs, -0));
 
     if(visualize_) {
+        visualizer_.init(nh, nh_private);
         visualizer_.createPublisher("frontiers");
         visualizer_.createPublisher("frontier_centers");
         visualizer_.createPublisher("free_voxels");
@@ -224,9 +222,9 @@ void FrontierEvaluator::visualizeVoxelStates() {
         }
     }
 
-    visualizer_.visualizeFromPoints("free_voxels", free_voxels, frame_id_, FrontierVisualizer::ColorType::BLUE);
-    visualizer_.visualizeFromPoints("unknown_voxels", unknown_voxels, frame_id_, FrontierVisualizer::ColorType::TEAL);
-    visualizer_.visualizeFromPoints("occupied_voxels", occupied_voxels, frame_id_, FrontierVisualizer::ColorType::PURPLE);
+    visualizer_.visualizePoints("free_voxels", free_voxels, frame_id_, Visualizer::ColorType::BLUE);
+    visualizer_.visualizePoints("unknown_voxels", unknown_voxels, frame_id_, Visualizer::ColorType::TEAL);
+    visualizer_.visualizePoints("occupied_voxels", occupied_voxels, frame_id_, Visualizer::ColorType::PURPLE);
 }
 
 void FrontierEvaluator::visualizeFrontierPoints() {
@@ -235,14 +233,14 @@ void FrontierEvaluator::visualizeFrontierPoints() {
     for(auto& frontier : frontiers_) {
         for(auto& point : frontier.points) { points.push_back(point); }
     }
-    visualizer_.visualizeFromPoints("frontiers", points, frame_id_, FrontierVisualizer::ColorType::WHITE);
+    visualizer_.visualizePoints("frontiers", points, frame_id_, Visualizer::ColorType::WHITE);
 }
 
 void FrontierEvaluator::visualizeFrontierCenters() {
     if(!visualize_) { return; }
     std::vector<Eigen::Vector3d> centers;
     for(auto& frontier : frontiers_) { centers.push_back(frontier.center); }
-    visualizer_.visualizeFromPoints("frontier_centers", centers, frame_id_, FrontierVisualizer::ColorType::RED, 2.0);
+    visualizer_.visualizePoints("frontier_centers", centers, frame_id_, Visualizer::ColorType::RED, 2.0);
 }
 
 } // namespace ariitk::frontier_explorer

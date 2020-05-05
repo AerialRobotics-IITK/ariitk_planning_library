@@ -19,5 +19,4 @@
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>visualization_msgs</depend>
-  <depend>voxblox_local_planner</depend>
 </package>
