@@ -14,8 +14,6 @@ add_definitions(-std=c++17)
 cs_add_library(${PROJECT_NAME}
   src/local_planner.cpp
   src/path_finder.cpp
-  src/ray_caster.cpp
-  src/path_visualizer.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES})
 
