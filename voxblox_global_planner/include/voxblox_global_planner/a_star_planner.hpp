@@ -1,6 +1,10 @@
 #pragma once
 
+<<<<<<< HEAD
 #include<memory>
+=======
+// #include<memory>
+>>>>>>> 652d9290b1c9b917128b11f9283e737c06446633
 
 #include <ros/ros.h>
 #include <voxblox_ros/esdf_server.h>
@@ -8,6 +12,7 @@
 #include <Eigen/Eigen>
 // #include <mav_planning_msgs/PlannerService.h>
 // #include <std_srvs/Empty.h>
+<<<<<<< HEAD
 #include <pcl/pcl_macros.h>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
@@ -40,6 +45,27 @@ class AStarPlanner {
         void esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud);
         ros::Publisher esdf_slice_pub_;
         pcl::PointCloud<pcl::PointXYZI> pointcloud_;
+=======
+// #include <pcl/pcl_macro.h>
+#include <sensor_msgs/PointCloud2.h>
+
+namespace ariitk::global_planner {
+
+struct GraphNode {
+    uint id;
+    Eigen::Vector3d position;
+    typedef std::shared_ptr<struct GraphNode> Ptr;
+    std::vector<Ptr > neighbours;
+};
+
+class AStarPlanner {
+    public:
+        AStarPlanner(const ros::NodeHandle& nh,const ros::NodeHandle& nh_private);
+        void esdfSliceCallback(sensor_msgs::PointCloud2 pointcloud);
+        ros::Publisher esdf_slice_pub_;
+        sensor_msgs::PointCloud2 pointcloud_;
+
+>>>>>>> 652d9290b1c9b917128b11f9283e737c06446633
 
     private:
         // bool plannerServiceCallback(
@@ -55,6 +81,7 @@ class AStarPlanner {
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_;
         ros::Subscriber esdf_slice_sub_;
+<<<<<<< HEAD
         std::vector<Node> graph_;
         std::vector<Eigen::Vector3d > path_;
     
@@ -63,4 +90,11 @@ class AStarPlanner {
 };
 
 
+=======
+        std::vector<GraphNode::Ptr> graph_;
+        std::vector<Eigen::Vector3d > path_;
+        // pcl::PointCloud<pcl::PointXYZI> pointcloud_;
+        double robot_radius_;
+};
+>>>>>>> 652d9290b1c9b917128b11f9283e737c06446633
 }
