@@ -27,12 +27,5 @@
   <depend>voxblox_ros</depend>
   <depend>voxblox_skeleton</depend>
   <depend>voxblox_planning_common</depend>
-<<<<<<< HEAD
   <depend>pcl_ros</depend>
-  <depend>std_srvs</depend>
-  </package>
-=======
-  <depend>sensor_msgs</depend>
-  <depend>std_srvs</depend>
 </package>
->>>>>>> 652d9290b1c9b917128b11f9283e737c06446633
