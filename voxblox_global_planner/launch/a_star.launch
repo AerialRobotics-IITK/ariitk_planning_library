@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+	<arg name="mav_name"      default="firefly"/>
+
+	<group ns="$(arg mav_name)">
+		<node name="a_star_planner" pkg="voxblox_global_planner" type="a_star_planner_node" output="screen" clear_params="true">
+			<rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load"/>
+		</node>
+	</group>
+</launch>
+ 
+
