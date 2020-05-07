@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <future>
 
 #include <ros/package.h>
 #include <ros/ros.h>
@@ -46,7 +47,11 @@ class SkeletonGlobalPlanner {
 
   bool getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, Eigen::Vector3d& new_pos) const;
 
+  enum class PlanStatus{FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN};
+
  private:
+  bool publishStatus();
+
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
@@ -54,6 +59,7 @@ class SkeletonGlobalPlanner {
   ros::Publisher sparse_graph_pub_;
   ros::Publisher path_pub_;
   ros::Publisher waypoint_list_pub_;
+  ros::Publisher plan_status_pub_;
 
   ros::ServiceServer planner_srv_;
   ros::ServiceServer path_pub_srv_;
@@ -75,6 +81,9 @@ class SkeletonGlobalPlanner {
 
   // Waypoints
   mav_msgs::EigenTrajectoryPointVector last_waypoints_;
+
+  PlanStatus status_;
+  std::future<bool> status_thread_;
 };
 
 }  // namespace ariitk::global_planner

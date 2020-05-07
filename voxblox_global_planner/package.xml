@@ -27,4 +27,6 @@
   <depend>voxblox_ros</depend>
   <depend>voxblox_skeleton</depend>
   <depend>voxblox_planning_common</depend>
+
+  <depend>ariitk_planning_msgs</depend>
 </package>
