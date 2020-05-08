@@ -50,7 +50,7 @@ class SkeletonGlobalPlanner {
   enum class PlanStatus{FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN};
 
  private:
-  bool publishStatus();
+  void setStatus(const PlanStatus& status);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -83,7 +83,7 @@ class SkeletonGlobalPlanner {
   mav_msgs::EigenTrajectoryPointVector last_waypoints_;
 
   PlanStatus status_;
-  std::future<bool> status_thread_;
+  std::future<void> status_thread_;
 };
 
 }  // namespace ariitk::global_planner

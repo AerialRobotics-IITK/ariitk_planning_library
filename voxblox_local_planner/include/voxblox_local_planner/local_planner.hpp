@@ -1,5 +1,6 @@
 #pragma once
 
+#include <future>
 #include <ros/ros.h>
 #include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/Odometry.h>
@@ -20,6 +21,7 @@ class LocalPlanner {
     public:
         LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
         void setConstantYaw(const double& yaw) { const_yaw_ = yaw; }
+        enum class PlanStatus{FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN};
     
     private:
         enum class YawPolicy{ POINT_FACING, ANTICIPATE_VELOCITY, FOLLOW_VELOCITY, CONSTANT };
@@ -51,6 +53,7 @@ class LocalPlanner {
             return pathfinder_.getMapDistanceAndGradient(point, gradient);
         }
         void clear();
+        void setStatus(const PlanStatus& status);
 
         Path waypoints_;
         Trajectory trajectory_;
@@ -71,12 +74,16 @@ class LocalPlanner {
 
         ros::Publisher command_pub_;
         ros::Publisher traj_pub_;
+        ros::Publisher plan_status_pub_;
 
         ros::Subscriber odometry_sub_;
         ros::Subscriber waypoint_sub_;
         ros::Subscriber waypoint_list_sub_;
 
         nav_msgs::Odometry odometry_;
+
+        PlanStatus status_;
+        std::future<void> status_thread_;
 };
 
 } // namespace ariitk::local_planner
