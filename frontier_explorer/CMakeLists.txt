@@ -21,10 +21,10 @@ target_link_libraries(${PROJECT_NAME} ${Eigen3_LIBRARIES})
 ############
 # BINARIES #
 ############
-cs_add_executable(frontier_evaluator_node
-  src/frontier_evaluator_node.cpp
+cs_add_executable(frontier_explorer_node
+  src/frontier_explorer_node.cpp
 )
-target_link_libraries(frontier_evaluator_node ${PROJECT_NAME})
+target_link_libraries(frontier_explorer_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #

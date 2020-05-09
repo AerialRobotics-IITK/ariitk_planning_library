@@ -14,7 +14,7 @@
     <arg name="mav_name"      value="$(arg mav_name)"/>
   </include>
 
-  <include file="$(find voxblox_global_planner)/launch/local_planner.launch">
+  <include file="$(find voxblox_local_planner)/launch/default.launch">
     <arg name="mav_name"      value="$(arg mav_name)"/>
   </include>
 

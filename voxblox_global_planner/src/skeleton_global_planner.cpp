@@ -16,6 +16,7 @@ SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
     voxblox_server_(nh_, nh_private_),
     skeleton_generator_() {
   constraints_.setParametersFromRos(nh_private_);
+  ROS_WARN("Global Planner: %lf", constraints_.robot_radius);
 
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("frame_id", frame_id_, frame_id_);
@@ -249,7 +250,7 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
   for(size_t step = 1; step <= max_iterations; step++) {
     for(double angle = -M_PI; angle < M_PI; angle += angle_step) {
       Eigen::Vector3d final_pos = pos + Eigen::Vector3d(cos(angle), sin(angle), 0) * step * constraints_.robot_radius;
-      if(getMapDistance(final_pos) >= constraints_.robot_radius) {
+      if(getMapDistance(final_pos, distance) && distance >= constraints_.robot_radius) {
         new_pos = final_pos;
         ROS_INFO("Point shifted from: (%lf %lf %lf) to (%lf %lf %lf)", 
               pos.x(), pos.y(), pos.z(), new_pos.x(), new_pos.y(), new_pos.z());

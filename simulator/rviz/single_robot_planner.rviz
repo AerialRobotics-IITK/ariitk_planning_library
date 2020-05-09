@@ -6,8 +6,8 @@ Panels:
       Expanded:
         - /RobotModel1/Links1
         - /LocalPlanner1
-        - /GlobalPlanner1
         - /GlobalPlanner1/GlobalPath1/Namespaces1
+        - /GlobalPlanner1/SparseGraph1
         - /GlobalPlanner1/SparseGraph1/Namespaces1
         - /FrontierExplorer1
         - /FrontierExplorer1/Frontiers1
@@ -131,12 +131,12 @@ Visualization Manager:
         - Class: voxblox_rviz_plugin/VoxbloxMesh
           Enabled: true
           Name: VoxbloxMesh
-          Topic: /firefly/voxblox_node/mesh
+          Topic: /firefly/voxblox_local_planner/mesh
           Unreliable: false
           Value: true
         - Class: rviz/MarkerArray
           Enabled: false
-          Marker Topic: /firefly/voxblox_node/occupied_nodes
+          Marker Topic: /firefly/voxblox_local_planner/occupied_nodes
           Name: OccupiedNodes
           Namespaces:
             {}
@@ -145,21 +145,21 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 3.1000001430511475
-            Min Value: -0.5
+            Max Value: 4.900000095367432
+            Min Value: -3.1000001430511475
             Value: true
           Axis: Z
-          Channel Name: x
+          Channel Name: intensity
           Class: rviz/PointCloud2
           Color: 255; 255; 255
-          Color Transformer: AxisColor
+          Color Transformer: Intensity
           Decay Time: 1
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 9.90000057220459
+          Max Intensity: 2
           Min Color: 0; 0; 0
-          Min Intensity: 0.10000000149011612
+          Min Intensity: -2
           Name: TSDFPointCloud
           Position Transformer: XYZ
           Queue Size: 10
@@ -167,7 +167,7 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.10000000149011612
           Style: Spheres
-          Topic: /firefly/voxblox_node/tsdf_pointcloud
+          Topic: /firefly/voxblox_local_planner/esdf_slice
           Unreliable: true
           Use Fixed Frame: true
           Use rainbow: true
@@ -187,7 +187,7 @@ Visualization Manager:
           Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 1.3184393644332886
+          Max Intensity: 1.3120956420898438
           Min Color: 0; 0; 0
           Min Intensity: -2
           Name: ESDFSlice
@@ -197,7 +197,7 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.10000000149011612
           Style: Spheres
-          Topic: /firefly/voxblox_node/esdf_slice
+          Topic: /firefly/voxblox_local_planner/esdf_slice
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -208,8 +208,48 @@ Visualization Manager:
       Displays:
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /firefly/mav_local_planner/local_path
-          Name: LocalPath
+          Marker Topic: /firefly/voxblox_local_planner/graph
+          Name: Graph
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/trajectory
+          Name: Trajectory
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/raw_path
+          Name: RawPath
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/occupied_path
+          Name: OccupiedTrajectory
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/free_path
+          Name: FreeTrajectory
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/voxblox_local_planner/short_path
+          Name: ShortenedPath
           Namespaces:
             {}
           Queue Size: 100
@@ -249,21 +289,36 @@ Visualization Manager:
       Displays:
         - Class: rviz/MarkerArray
           Enabled: true
-          Marker Topic: /firefly/frontier_evaluator/frontiers
+          Marker Topic: /firefly/frontier_explorer/frontier_centers
           Name: Frontiers
-          Namespaces:
-            center: true
-            frontier_voxels: true
-          Queue Size: 100
-          Value: true
-        - Class: rviz/MarkerArray
-          Enabled: false
-          Marker Topic: /firefly/frontier_evaluator/voxel_states
-          Name: VoxelStates
           Namespaces:
             {}
           Queue Size: 100
-          Value: false
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/frontier_explorer/free_voxels
+          Name: FreeVoxels
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/frontier_explorer/occupied_voxels
+          Name: OccupiedVoxels
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/MarkerArray
+          Enabled: true
+          Marker Topic: /firefly/frontier_explorer/unknown_voxels
+          Name: UnknownVoxels
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
       Enabled: true
       Name: FrontierExplorer
     - Alpha: 1
@@ -317,16 +372,26 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
+<<<<<<< HEAD
       Distance: 20.26424217224121
+=======
+      Distance: 24.322505950927734
+>>>>>>> da67d0a78f9d7c8aa188b61cd48e1aa59e9741d3
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
+<<<<<<< HEAD
         X: 1.0049412250518799
         Y: 1.2817018032073975
         Z: 0
+=======
+        X: -1.3092455863952637
+        Y: -1.9242548942565918
+        Z: -3.1433319236384705e-6
+>>>>>>> da67d0a78f9d7c8aa188b61cd48e1aa59e9741d3
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -340,7 +405,7 @@ Visualization Manager:
 Window Geometry:
   Displays:
     collapsed: true
-  Height: 1060
+  Height: 343
   Hide Left Dock: true
   Hide Right Dock: true
   PlanningPanel:
@@ -354,6 +419,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 958
-  X: 960
-  Y: 20
+  Width: 945
+  X: 10
+  Y: 358

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="mav_name"      default="firefly"/>
+
+  <group ns="$(arg mav_name)">
+    <node name="voxblox_local_planner" pkg="voxblox_local_planner" type="local_planner_node" output="screen" clear_params="true" respawn="true">
+      <rosparam file="$(find simulator)/cfg/voxblox_params.yaml" command="load"/>
+
+      <remap from="pointcloud"                to="vi_sensor/camera_depth/depth/points"/>
+      <remap from="voxblox_local_planner/esdf_map_out" to="esdf_map" />
+      <remap from="voxblox_local_planner/tsdf_map_out" to="tsdf_map" />
+      <remap from="odometry" to="ground_truth/odometry"/>
+      <rosparam file="$(find voxblox_local_planner)/cfg/params.yaml" command="load"/>
+    </node>
+  </group>
+</launch>

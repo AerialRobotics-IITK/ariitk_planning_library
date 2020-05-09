@@ -4,6 +4,7 @@ namespace ariitk::frontier_explorer {
 
 FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     :  esdf_server_(nh, nh_private) {
+    
     nh_private.getParam("accurate_frontiers", accurate_frontiers_);
     nh_private.getParam("checking_distance", checking_dist_);
     nh_private.getParam("visualize", visualize_);
@@ -13,6 +14,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("upper_range", upper_range_);
     nh_private.getParam("lower_range", lower_range_);
     nh_private.getParam("min_frontier_size", min_frontier_size_);
+    
     CHECK(esdf_server_.getTsdfMapPtr());
 
     constraints_.setParametersFromRos(nh_private);
@@ -20,9 +22,6 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
 
     voxel_size_ = esdf_server_.getTsdfMapPtr()->voxel_size();
     block_size_ = esdf_server_.getTsdfMapPtr()->block_size();
-
-    frontier_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("frontiers", 1);
-    voxel_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("voxel_states", 1);
 
     auto vs = voxel_size_ * checking_dist_;
     if(!accurate_frontiers_) {
@@ -60,9 +59,8 @@ void FrontierEvaluator::run() {
     clusterFrontiers();
 
     if (visualize_) {
-        visualization_msgs::MarkerArray frontier_marker;
-        createMarkerFromFrontiers(&frontier_marker);
-        frontier_pub_.publish(frontier_marker);
+        visualizeFrontierPoints();
+        visualizeFrontierCenters();
         visualizeVoxelStates();
     }
 }
@@ -77,11 +75,7 @@ void FrontierEvaluator::findFrontiers() {
         const voxblox::Block<voxblox::TsdfVoxel> &block = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
         for(size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
-<<<<<<< HEAD
-            if (isFrontierVoxel(coord)){
-=======
             if(isFrontierVoxel(coord)){
->>>>>>> fac7743ff9b989dc2a2f3ba246194b0470584943
                 coord(2,0) = slice_level_;
                 hash_map_[getHash(coord)] = coord;
             }
@@ -172,138 +166,58 @@ void FrontierEvaluator::clusterFrontiers() {
     }
 }
 
-void FrontierEvaluator::findNeighbours(const std::string& key, Frontier& frontier) {
-    auto point = hash_map_.at(key);
-    hash_map_.erase(key);
-    frontier.center = (frontier.center * frontier.points.size() + point) / 
-                        (frontier.points.size() + 1);
-    frontier.points.push_back(point);
-    for (auto& next_point: planar_neighbor_voxels_) {
-        auto hash = getHash(point + next_point);
-        if (hash_map_.find(hash) != hash_map_.end()) {
-            findNeighbours(hash, frontier);
-        }
-    }
-}
-
-void FrontierEvaluator::convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg) {
+void FrontierEvaluator::convertFrontierToMsg(const FrontierEvaluator::Frontier& frontier, ariitk_planning_msgs::Frontier& msg) {
     msg.center.x = frontier.center.x();
     msg.center.y = frontier.center.y();
     msg.center.z = frontier.center.z();
     msg.num_points = frontier.points.size();
 }
 
-void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArray* markers) {
-    CHECK_NOTNULL(markers);
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = frame_id_;
-    marker.ns = "frontier_voxels";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_/2.0;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.color.r = 1.0;
-    marker.color.g = 1.0;
-    marker.color.b = 1.0;
-    marker.color.a = 1.0;
+void FrontierEvaluator::visualizeVoxelStates() {
+    if(!visualize_) { return; }
+    // need to shorten this too
 
-    visualization_msgs::Marker center = marker;
-    center.ns = "center";
-    center.color.r = 0.0;
-    center.scale.x = center.scale.y = center.scale.y = voxel_size_;
-
-    for (const auto& frontier : frontiers_) {
-        for (const auto& point : frontier.points) {
-            geometry_msgs::Point cube_center;
-            cube_center.x = point.x();
-            cube_center.y = point.y();
-            cube_center.z = point.z();
-            marker.points.push_back(cube_center);
-        }
-        geometry_msgs::Point cube_center;
-        cube_center.x = frontier.center.x();
-        cube_center.y = frontier.center.y();
-        cube_center.z = frontier.center.z();
-        center.points.push_back(cube_center);
-    }
-    markers->markers.push_back(marker);
-    markers->markers.push_back(center);
-}
-
-void FrontierEvaluator::createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers) {
-    CHECK_NOTNULL(markers);
     size_t vps = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
     size_t num_voxels_per_block = vps * vps * vps;
 
-    visualization_msgs::Marker free_marker, occupied_marker, unknown_marker;
+    std::vector<Eigen::Vector3d> free_voxels, occupied_voxels, unknown_voxels;
 
-    free_marker.header.frame_id = frame_id_;
-    free_marker.id = 0;
-    free_marker.ns = "free_voxels";
-    free_marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    free_marker.scale.x = free_marker.scale.y = free_marker.scale.y = voxel_size_/2.0;
-    free_marker.action = visualization_msgs::Marker::ADD;
-    free_marker.color.r = 0.5; free_marker.color.g = 0.0; free_marker.color.b = 1.0; free_marker.color.a = 1.0;
-
-    occupied_marker.header.frame_id = frame_id_;
-    occupied_marker.id = 0;
-    occupied_marker.ns = "occupied_voxels";
-    occupied_marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    occupied_marker.scale.x = occupied_marker.scale.y = occupied_marker.scale.y = voxel_size_/2.0;
-    occupied_marker.action = visualization_msgs::Marker::ADD;
-    occupied_marker.color.r = 1.0; occupied_marker.color.g = 0.0; occupied_marker.color.b = 0.5; occupied_marker.color.a = 1.0;
-
-    unknown_marker.header.frame_id = frame_id_;
-    unknown_marker.id = 0; 
-    unknown_marker.ns = "unknown_voxels";
-    unknown_marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    unknown_marker.scale.x = unknown_marker.scale.y = unknown_marker.scale.y = voxel_size_/2.0;
-    unknown_marker.action = visualization_msgs::Marker::ADD;
-    unknown_marker.color.r = 0.0; unknown_marker.color.g = 1.0; unknown_marker.color.b = 1.0; unknown_marker.color.a = 1.0;
-    
     voxblox::BlockIndexList blocks;
     double weight = 0.0;
     esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
     for(const auto& index : blocks) {
         const voxblox::Block<voxblox::TsdfVoxel>& block = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
-
         for(size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
-            bool result = getVoxelWeight(coord, weight);
-            if(weight > 1e-3) {
-                geometry_msgs::Point cube_center;
-                cube_center.x = coord.x();
-                cube_center.y = coord.y();
-                cube_center.z = coord.z();
-
+            if(getVoxelWeight(coord, weight) && weight > 1e-3) {
                 switch(getVoxelState(coord)) {
-                    case VoxelState::OCCUPIED : occupied_marker.points.push_back(cube_center); break; 
-                    case VoxelState::FREE : 
-                        free_marker.points.push_back(cube_center); 
-                        for(auto& neighbour : neighbor_voxels_){
-                            if(getVoxelState(coord + neighbour) == VoxelState::UNKNOWN) {
-                                cube_center.x += neighbour.x();
-                                cube_center.y += neighbour.y();
-                                cube_center.z += neighbour.z();
-                                unknown_marker.points.push_back(cube_center);
-                            } 
-                        }
-                        break;
-                    case VoxelState::UNKNOWN : unknown_marker.points.push_back(cube_center); break;
+                    case VoxelState::OCCUPIED : occupied_voxels.push_back(coord); break; 
+                    case VoxelState::FREE : free_voxels.push_back(coord); break;
+                    case VoxelState::UNKNOWN : unknown_voxels.push_back(coord); break;
                 }
             }
         }
     }
-    markers->markers.push_back(free_marker);
-    markers->markers.push_back(occupied_marker);
-    markers->markers.push_back(unknown_marker);
+
+    visualizer_.visualizePoints("free_voxels", free_voxels, frame_id_, Visualizer::ColorType::BLUE);
+    visualizer_.visualizePoints("unknown_voxels", unknown_voxels, frame_id_, Visualizer::ColorType::TEAL);
+    visualizer_.visualizePoints("occupied_voxels", occupied_voxels, frame_id_, Visualizer::ColorType::PURPLE);
 }
 
-void FrontierEvaluator::visualizeVoxelStates() {
+void FrontierEvaluator::visualizeFrontierPoints() {
     if(!visualize_) { return; }
-    visualization_msgs::MarkerArray voxel_marker;
-    createMarkerFromVoxelStates(&voxel_marker);
-    voxel_pub_.publish(voxel_marker);
+    std::vector<Eigen::Vector3d> points;
+    for(auto& frontier : frontiers_) {
+        for(auto& point : frontier.points) { points.push_back(point); }
+    }
+    visualizer_.visualizePoints("frontiers", points, frame_id_, Visualizer::ColorType::WHITE);
+}
+
+void FrontierEvaluator::visualizeFrontierCenters() {
+    if(!visualize_) { return; }
+    std::vector<Eigen::Vector3d> centers;
+    for(auto& frontier : frontiers_) { centers.push_back(frontier.center); }
+    visualizer_.visualizePoints("frontier_centers", centers, frame_id_, Visualizer::ColorType::RED, 2.0);
 }
 
 } // namespace ariitk::frontier_explorer

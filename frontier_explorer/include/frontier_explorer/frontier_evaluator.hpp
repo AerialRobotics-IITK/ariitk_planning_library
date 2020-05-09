@@ -7,11 +7,13 @@
 #include <mav_planning_common/physical_constraints.h>
 #include <Eigen/Core>
 
+#include <rviz_visualizer/visualizer.hpp>
 #include <ariitk_planning_msgs/Frontiers.h>
 
 namespace ariitk::frontier_explorer {
 
 enum class VoxelState{OCCUPIED, FREE, UNKNOWN};
+typedef ariitk::rviz_visualizer::Visualizer Visualizer;
 
 class FrontierEvaluator {
     public:
@@ -24,9 +26,9 @@ class FrontierEvaluator {
         bool getVoxelWeight(const Eigen::Vector3d& point, double& weight);
         ariitk_planning_msgs::Frontiers getFrontiers() const { return frontiers_msg_; };
         
-        void createMarkerFromFrontiers(visualization_msgs::MarkerArray *markers);
-        void createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers);
         void visualizeVoxelStates();
+        void visualizeFrontierPoints();
+        void visualizeFrontierCenters();
 
     protected:
         struct Frontier{
@@ -40,10 +42,6 @@ class FrontierEvaluator {
         void findNeighbours(const std::string& key, Frontier& frontier);
         void clusterFrontiers();
         void convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg);
-        void findNeighbours(const std::string& key, Frontier& frontier);
-        inline std::string getHash(const Eigen::Vector3d& point) {
-            return std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y() / voxel_size_));
-        }
 
         std::vector<Frontier> frontiers_;
         std::vector<Eigen::Vector3d> neighbor_voxels_;
@@ -68,11 +66,10 @@ class FrontierEvaluator {
         bool visualize_;    
 
         std::string frame_id_;
+
+        Visualizer visualizer_;
         
         ariitk_planning_msgs::Frontiers frontiers_msg_;
-
-        ros::Publisher frontier_pub_;
-        ros::Publisher voxel_pub_;
 };
 
 } // namespace ariitk::frontier_explorer
