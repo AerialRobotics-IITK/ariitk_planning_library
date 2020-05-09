@@ -1,6 +1,7 @@
 #include <voxblox_local_planner/local_planner.hpp>
 #include <mav_msgs/conversions.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
+#include <ariitk_planning_msgs/PlanStatus.h>
 
 namespace ariitk::local_planner {
 
@@ -35,11 +36,16 @@ LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     waypoint_list_sub_ = nh.subscribe("waypoint_list", 1, &LocalPlanner::waypointListCallback, this);
     command_pub_ = nh.advertise<geometry_msgs::PoseStamped>("command/pose", 1);
     traj_pub_ = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>("command/trajectory", 1);
+    plan_status_pub_ = nh_private.advertise<ariitk_planning_msgs::PlanStatus>("status", 1);
+    
+    status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::IDLE);
 }
 
 void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
     ROS_INFO("Recieved waypoint!");
     clear();
+    status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::IN_PROGRESS);
+
     mav_msgs::EigenOdometry start_odom;
     mav_msgs::eigenOdometryFromMsg(odometry_, &start_odom);
 
@@ -69,6 +75,8 @@ void LocalPlanner::waypointCallback(const geometry_msgs::PoseStamped& msg) {
         }
         loop_rate.sleep();
     }
+
+    status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::SUCCESS);
 }
 
 bool LocalPlanner::checkForReplan(const Trajectory& segment) {
@@ -104,7 +112,8 @@ Trajectory LocalPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3
 
 void LocalPlanner::executePlan(const Trajectory& trajectory) {
     if(trajectory.empty()) { 
-        ROS_WARN("Nothing to publish!"); 
+        ROS_WARN("Nothing to publish!");
+        status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::UNKNOWN);
         return;
     }
 
@@ -119,10 +128,12 @@ void LocalPlanner::executePlan(const Trajectory& trajectory) {
 
 void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
     clear();
-    
+    status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::IN_PROGRESS);
+
     uint num_waypts = msg.poses.size();
     if(num_waypts == 0) { 
         ROS_INFO("No waypoints!"); 
+        status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::UNKNOWN);
         return; 
     }
 
@@ -143,7 +154,7 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
     executePlan(trajectory_);
 
     ros::Rate loop_rate(10);
-    while(ros::ok() && (curr_waypt_ < num_waypts || norm(odometry_.pose.pose.position, trajectory_.back().position_W) > voxel_size_)) {
+    while(ros::ok() && (curr_waypt_ < num_waypts && norm(odometry_.pose.pose.position, trajectory_.back().position_W) > voxel_size_)) {
         ros::spinOnce();
         if(norm(odometry_.pose.pose.position, trajectory_.back().position_W) < robot_radius_ && curr_waypt_ < num_waypts - 1) {
             Trajectory next_path = plan(waypoints[curr_waypt_].position_W, waypoints[curr_waypt_ + 1].position_W);
@@ -168,6 +179,8 @@ void LocalPlanner::waypointListCallback(const geometry_msgs::PoseArray& msg) {
         }
         loop_rate.sleep();
     }
+    
+    status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::SUCCESS);
 }
 
 void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
@@ -187,7 +200,10 @@ void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& sta
 
 Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoints) {
     Trajectory traj;
-    if(waypoints.empty()) { return traj; }
+    if(waypoints.empty()) { 
+        status_thread_ = std::async(std::launch::async, &LocalPlanner::setStatus, this, PlanStatus::FAILURE);
+        return traj; 
+    }
 
     Trajectory eigen_waypts;
     convertPathToTrajectory(waypoints, eigen_waypts);
@@ -300,6 +316,24 @@ void LocalPlanner::clear() {
     waypoints_.clear();
     trajectory_.clear();
     curr_waypt_ = path_index_ = pub_index_ = 0;
+}
+
+void LocalPlanner::setStatus(const PlanStatus& status) {
+  status_ = status;
+  if(status == PlanStatus::IDLE) { return; }
+  ros::Rate loop_rate(50);
+  ros::Time start_time = ros::Time::now();
+  
+  ariitk_planning_msgs::PlanStatus status_msg;
+  status_msg.status = int(status_);
+  status_msg.header.stamp = start_time;
+
+  ros::Time end_time = start_time + ros::Duration(0.2);
+  while(ros::Time::now() < end_time && int(status_msg.status) == int(status_)) {
+    ros::spinOnce();
+    plan_status_pub_.publish(status_msg);
+    loop_rate.sleep();
+  }
 }
 
 } // namespace ariitk::local_planner

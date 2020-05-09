@@ -3,6 +3,7 @@
 #include <mav_planning_common/utils.h>
 
 #include <voxblox_global_planner/skeleton_global_planner.hpp>
+#include <ariitk_planning_msgs/PlanStatus.h>
 
 namespace ariitk::global_planner {
 
@@ -28,6 +29,7 @@ SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
 
   waypoint_list_pub_ =
       nh_.advertise<geometry_msgs::PoseArray>("waypoint_list", 1);
+  plan_status_pub_ = nh_private_.advertise<ariitk_planning_msgs::PlanStatus>("status", 1);
 
   planner_srv_ = nh_private_.advertiseService(
       "plan", &SkeletonGlobalPlanner::plannerServiceCallback, this);
@@ -59,6 +61,8 @@ SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh,
   path_shortener_.setEsdfLayer(
       voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
   path_shortener_.setConstraints(constraints_);
+
+  status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::IDLE);
 }
 
 void SkeletonGlobalPlanner::generateSparseGraph() {
@@ -86,6 +90,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     mav_planning_msgs::PlannerServiceRequest& request,
     mav_planning_msgs::PlannerServiceResponse& response) {
   mav_msgs::EigenTrajectoryPoint start_pose, goal_pose;
+  status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::IN_PROGRESS);
 
   mav_msgs::eigenTrajectoryPointFromPoseMsg(request.start_pose, &start_pose);
   mav_msgs::eigenTrajectoryPointFromPoseMsg(request.goal_pose, &goal_pose);
@@ -105,6 +110,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     Eigen::Vector3d new_goal_pos;
     if(!getNearestFreeSpaceToPoint(goal_pose.position_W, new_goal_pos)) {
       ROS_ERROR("No free points near goal pose, and goal pose is occupied!");
+      status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::FAILURE);
       return false;
     }
     goal_pose.position_W = new_goal_pos;
@@ -116,6 +122,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     Eigen::Vector3d new_start_pos;
     if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
       ROS_ERROR("No free points near start pose, and start pose is occupied!");
+      status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::FAILURE);
       return false;
     }
     start_pose.position_W = new_start_pos;
@@ -180,6 +187,9 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
                   << std::endl
                   << mav_trajectory_generation::timing::Timing::Print());
   }
+
+  if(success) status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::SUCCESS);
+  else status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::FAILURE);
 }
 
 bool SkeletonGlobalPlanner::getMapDistance(
@@ -259,6 +269,24 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
     }
   }
   return false;
+}
+
+void SkeletonGlobalPlanner::setStatus(const PlanStatus& status) {
+  status_ = status;
+  if(status == PlanStatus::IDLE) { return; }
+  ros::Rate loop_rate(50);
+  ros::Time start_time = ros::Time::now();
+  
+  ariitk_planning_msgs::PlanStatus status_msg;
+  status_msg.status = int(status_);
+  status_msg.header.stamp = start_time;
+
+  ros::Time end_time = start_time + ros::Duration(0.2);
+  while(ros::Time::now() < end_time && int(status_msg.status) == int(status_)) {
+    ros::spinOnce();
+    plan_status_pub_.publish(status_msg);
+    loop_rate.sleep();
+  }
 }
 
 }  // namespace mav_planning
