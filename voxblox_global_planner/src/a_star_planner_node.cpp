@@ -13,9 +13,6 @@ int main(int argc, char** argv) {
     while(ros::ok()) {
         count++;
         ros::spinOnce();
-        if(count%10==0) {
-            planner_node.esdf_slice_pub_.publish(planner_node.pointcloud_);
-        }
         loop_rate.sleep();
     }
 

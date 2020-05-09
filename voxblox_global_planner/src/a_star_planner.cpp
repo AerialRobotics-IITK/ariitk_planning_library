@@ -13,13 +13,16 @@ AStarPlanner::AStarPlanner(const ros::NodeHandle& nh,
                           const ros::NodeHandle& nh_private)
   : nh_(nh),
     nh_private_(nh_private),
-    voxblox_server_(nh_,nh_private_) {
+    voxblox_server_(nh,nh_private) {
 
     nh_private_.param("robot_radius",robot_radius_,0.45);
     nh_private_.param("visualize",visualize_,true);
 
     esdf_slice_sub_ = nh_private_.subscribe("esdf_slice",1,&AStarPlanner::esdfSliceCallback,this);
     esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_slice_out",1,true);
+
+    visualizer_.init(nh,nh_private);
+    visualizer_.createPublisher("graph");
 
     }
 
@@ -70,6 +73,11 @@ void PathVisualizer::init(const ros::NodeHandle& nh, const ros::NodeHandle& nh_p
     color_map_.insert(std::make_pair(PathVisualizer::ColorType::TEAL,       Color::Teal()));
     color_map_.insert(std::make_pair(PathVisualizer::ColorType::CHARTREUSE, Color::Chartreuse()));
     color_map_.insert(std::make_pair(PathVisualizer::ColorType::PURPLE,     Color::Purple()));
+}
+
+void PathVisualizer::createPublisher(const std::string& topic_name) {
+    ros::Publisher marker_pub = nh_private_.advertise<visualization_msgs::MarkerArray>(topic_name, 1);
+    publisher_map_.insert(std::make_pair(topic_name, marker_pub));
 }
 
 void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& graph,
@@ -127,20 +135,18 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
             edge_marker.points.push_back(start_point);
             edge_marker.points.push_back(end_point);
         }
-    }
-    markers.markers.push_back(edge_marker);
+        markers.markers.push_back(edge_marker);
 
-    publisher_map_[topic_name].publish(markers);
+    }
+  publisher_map_[topic_name].publish(markers);
 }
 
 void AStarPlanner::esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud) {
 
   pointcloud_ = pointcloud;
-
-   generateGraph();              //generating graph from Slices
+  esdf_slice_pub_.publish(pointcloud_);
 
   if(visualize_) {
-    visualizer_.init(nh_,nh_private_);
     visualizer_.visualizeGraph("graph",graph_);
   }
 
