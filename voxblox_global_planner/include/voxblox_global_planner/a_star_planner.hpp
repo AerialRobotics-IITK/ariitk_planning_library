@@ -96,9 +96,6 @@ class PathVisualizer {
 class AStarPlanner {
     public:
         AStarPlanner(const ros::NodeHandle& nh,const ros::NodeHandle& nh_private);
-        void esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud);
-        ros::Publisher esdf_slice_pub_;
-        pcl::PointCloud<pcl::PointXYZI> pointcloud_;
 
     private:
         // bool plannerServiceCallback(
@@ -109,11 +106,14 @@ class AStarPlanner {
         //     std_srvs::EmptyResponse& response);
         void generateGraph();
         void findPath(const Eigen::Vector3d& start_pose, const Eigen::Vector3d& goal_pose);
+        void esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud);
 
         voxblox::EsdfServer voxblox_server_;
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_;
         ros::Subscriber esdf_slice_sub_;
+        ros::Publisher esdf_slice_pub_;
+        pcl::PointCloud<pcl::PointXYZI> pointcloud_;
         std::vector<Node> graph_;
         std::vector<Eigen::Vector3d > path_;
     

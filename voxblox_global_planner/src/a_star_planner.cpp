@@ -27,6 +27,7 @@ AStarPlanner::AStarPlanner(const ros::NodeHandle& nh,
     }
 
 void AStarPlanner::generateGraph() {
+  ROS_INFO("Hello world");
   uint i=0;
   graph_.clear();
   for(auto& point : pointcloud_.points) {
@@ -53,6 +54,7 @@ void AStarPlanner::generateGraph() {
             }
         }
     }
+    ROS_INFO("Hello World");
 }
 
 void PathVisualizer::init(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private) {
@@ -146,9 +148,11 @@ void AStarPlanner::esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud)
   pointcloud_ = pointcloud;
   esdf_slice_pub_.publish(pointcloud_);
 
+  generateGraph();
+
   if(visualize_) {
-    visualizer_.visualizeGraph("graph",graph_);
-  }
+      visualizer_.visualizeGraph("graph",graph_);
+      }
 
 }
 
