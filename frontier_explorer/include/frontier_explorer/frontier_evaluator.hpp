@@ -34,6 +34,10 @@ class FrontierEvaluator {
             Eigen::Vector3d center;
         };
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
+        inline std::string getHash(const Eigen::Vector3d& coord) { 
+            return std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y() / voxel_size_));
+        }
+        void findNeighbours(const std::string& key, Frontier& frontier);
         void clusterFrontiers();
         void convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg);
         void findNeighbours(const std::string& key, Frontier& frontier);

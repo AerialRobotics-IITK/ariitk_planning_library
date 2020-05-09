@@ -1,4 +1,4 @@
-#include <frontier_explorer/frontier_evaluator.hpp>
+#include <frontier_explorer/goal_selector.hpp>
 
 using namespace ariitk::frontier_explorer;
 
@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 
     FLAGS_alsologtostderr = true;
 
-    FrontierEvaluator evaluator(nh, nh_private);
+    GoalSelector evaluator(nh, nh_private);
 
     double update_rate = 10.0;
     nh_private.getParam("update_frontiers_every_n_sec", update_rate);

@@ -13,20 +13,19 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("upper_range", upper_range_);
     nh_private.getParam("lower_range", lower_range_);
     nh_private.getParam("min_frontier_size", min_frontier_size_);
-    CHECK(esdf_server_.getEsdfMapPtr());
+    CHECK(esdf_server_.getTsdfMapPtr());
 
     constraints_.setParametersFromRos(nh_private);
     esdf_server_.setTraversabilityRadius(constraints_.robot_radius);
 
-    voxel_size_ = esdf_server_.getEsdfMapPtr()->voxel_size();
-    block_size_ = esdf_server_.getEsdfMapPtr()->block_size();
+    voxel_size_ = esdf_server_.getTsdfMapPtr()->voxel_size();
+    block_size_ = esdf_server_.getTsdfMapPtr()->block_size();
 
     frontier_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("frontiers", 1);
     voxel_pub_ = nh_private.advertise<visualization_msgs::MarkerArray>("voxel_states", 1);
 
     auto vs = voxel_size_ * checking_dist_;
     if(!accurate_frontiers_) {
-        neighbor_voxels_.reserve(6);
         neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
         neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
@@ -34,69 +33,32 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
         neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, vs));
         neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, -vs));
     } else {
-        neighbor_voxels_.reserve(26);
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, 0));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, -vs));
-        neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, -vs));
+        for(int i = -1; i <= 1; i++) {
+            for(int j = -1; j <= 1; j++) {
+                for(int k = -1; k <= 1; k++) {
+                    if((abs(i) + abs(j) + abs(k)) == 0) { continue; }
+                    neighbor_voxels_.push_back(Eigen::Vector3d(i*vs, j*vs, k*vs));
+                }
+            }
+        }
     }
 
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, 0, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, 0, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, -2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, 2*vs, -0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, -0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, -0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, 2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, -2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, 2*vs, -0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, -2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, vs, -0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, -vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, -vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 2*vs, 0));
-    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -2*vs, -0));
-
-    ROS_INFO("%lf", min_frontier_size_);
+    for(int i = -2; i <=2; i++) {
+        for(int j = -2; j <= 2; j++) {
+            if((abs(i) + abs(j)) == 0) { continue; }
+            planar_neighbor_voxels_.push_back(Eigen::Vector3d(i*vs, j*vs, 0)); 
+        }
+    }
 }
 
 void FrontierEvaluator::run() {
     frontiers_.clear();
     frontiers_msg_.frontiers.clear();
     hash_map_.clear();
+
     findFrontiers();
     clusterFrontiers();
+
     if (visualize_) {
         visualization_msgs::MarkerArray frontier_marker;
         createMarkerFromFrontiers(&frontier_marker);
@@ -111,11 +73,15 @@ void FrontierEvaluator::findFrontiers() {
 
     voxblox::BlockIndexList blocks;
     esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
-    for (const auto &index : blocks) {
+    for(const auto &index : blocks) {
         const voxblox::Block<voxblox::TsdfVoxel> &block = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
-        for (size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
+        for(size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
+<<<<<<< HEAD
             if (isFrontierVoxel(coord)){
+=======
+            if(isFrontierVoxel(coord)){
+>>>>>>> fac7743ff9b989dc2a2f3ba246194b0470584943
                 coord(2,0) = slice_level_;
                 hash_map_[getHash(coord)] = coord;
             }
@@ -123,16 +89,29 @@ void FrontierEvaluator::findFrontiers() {
     }
 }
 
+void FrontierEvaluator::findNeighbours(const std::string& key, Frontier& frontier) {
+    auto point = hash_map_.at(key);
+    hash_map_.erase(key);
+
+    frontier.center = (frontier.center * frontier.points.size() + point) / (frontier.points.size() + 1);
+    frontier.points.push_back(point);
+
+    for(auto& next_point : planar_neighbor_voxels_) {
+        auto neighbour_hash = getHash(point + next_point);
+        if(hash_map_.find(neighbour_hash) != hash_map_.end()) { findNeighbours(neighbour_hash, frontier); }
+    }
+}
+
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     if(getVoxelState(voxel) != VoxelState::FREE) { return false; }
     if((slice_level_ - voxel(2,0)) >= lower_range_ || (voxel(2,0) - slice_level_) >= upper_range_) { return false; }
+
     VoxelState voxel_state;
     for(auto& neighbour : neighbor_voxels_) {
         voxel_state = getVoxelState(voxel + neighbour);
-        if(voxel_state == VoxelState::UNKNOWN) { 
-            return true; 
-        }
+        if(voxel_state == VoxelState::UNKNOWN) { return true; }
     }
+
     return false;
 }
 
@@ -146,15 +125,14 @@ VoxelState FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
         } else {
             return VoxelState::UNKNOWN;
         }
-    } else {
-        return VoxelState::OCCUPIED;
-    }
+    } else { return VoxelState::OCCUPIED; }
 }
 
 bool FrontierEvaluator::getVoxelDistance(const Eigen::Vector3d& point, double& distance) {
     voxblox::Point voxblox_point(point.x(), point.y(), point.z());
     voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->
     getBlockPtrByCoordinates(voxblox_point);
+    
     if(block_ptr) {
         voxblox::TsdfVoxel* tsdf_voxel_ptr = block_ptr->getVoxelPtrByCoordinates(voxblox_point);
         if(tsdf_voxel_ptr) { 
@@ -169,6 +147,7 @@ bool FrontierEvaluator::getVoxelWeight(const Eigen::Vector3d& point, double& wei
     voxblox::Point voxblox_point(point.x(), point.y(), point.z());
     voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->
     getBlockPtrByCoordinates(voxblox_point);
+    
     if(block_ptr) {
         voxblox::TsdfVoxel* tsdf_voxel_ptr = block_ptr->getVoxelPtrByCoordinates(voxblox_point);
         if(tsdf_voxel_ptr) { 
@@ -183,6 +162,7 @@ void FrontierEvaluator::clusterFrontiers() {
     while(!hash_map_.empty()) {
         Frontier frontier;
         findNeighbours(hash_map_.begin()->first, frontier);
+        
         if(frontier.points.size() < min_frontier_size_) { continue; }
         frontiers_.push_back(frontier);
 
@@ -230,7 +210,7 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     visualization_msgs::Marker center = marker;
     center.ns = "center";
     center.color.r = 0.0;
-    center.scale.x = center.scale.y = center.scale.y = voxel_size_ * 2.0;
+    center.scale.x = center.scale.y = center.scale.y = voxel_size_;
 
     for (const auto& frontier : frontiers_) {
         for (const auto& point : frontier.points) {

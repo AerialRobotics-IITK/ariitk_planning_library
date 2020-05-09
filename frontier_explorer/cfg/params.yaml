@@ -8,6 +8,8 @@ checking_distance: 1.0                    # Distance in *voxelsizes* where we ch
 surface_distance_threshold_factor: 3.5    # Distance in *voxelsizes* upto which voxels near the surface are marked as occupied
 slice_level: 1.0                          # Height at which the ESDF slice is provided, in *meters*
 min_frontier_size: 3                      # Minimum points required in a frontier
-upper_range: -0.2                         # Max height of points with respect to slice level, in *meters*
-lower_range: 0.8                          # Min height of points with respect to slice level, in *meters*
-update_frontiers_every_n_sec: 1.0         # How often frontiers are calculated and processed, in *seconds*
+upper_range: -0.2                          # Only consider those points for frontiers 
+lower_range: 0.8                          # whose height lies in $slice_level +- $height_range
+voxel_size: 0.2
+visualize: true
+clear_radius: 1.0
