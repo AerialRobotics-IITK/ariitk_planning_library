@@ -26,6 +26,11 @@ GoalSelector::GoalSelector(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     
     goal_pub_ = nh_private_.advertise<geometry_msgs::PoseStamped>("goal", 1);
     active_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>("active_frontiers", 1);
+    
+    if(visualize_) {
+        visualizer_.init(nh, nh_private);
+        visualizer_.createPublisher("active_frontiers");
+    }
 }
 
 void GoalSelector::run() {
@@ -57,22 +62,13 @@ void GoalSelector::visualizeActiveFrontiers() {
     if(!active_frontiers_.empty()) active_frontiers = active_frontiers_;
     else {return;}
 
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "world";
-    marker.header.stamp = ros::Time::now();
-    marker.ns = "active_frontiers";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * 2.0;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.color.r = 1.0; marker.color.b = 0.0;
-    marker.color.a = 1.0; marker.color.g = 0.0;
+    std::vector<Eigen::Vector3d> frontier_centers;
+    for(auto& frontier : active_frontiers) {
+        Eigen::Vector3d point(frontier.center.x, frontier.center.y, frontier.center.z);
+        frontier_centers.push_back(point); 
+    }
 
-    for(auto& point : active_frontiers) {  marker.points.push_back(point.center); }
-    
-    visualization_msgs::MarkerArray markers;
-    markers.markers.push_back(marker);
-    active_pub_.publish(markers);
+    visualizer_.visualizePoints("active_frontiers", frontier_centers, "world", Visualizer::ColorType::RED, 2.0);
 }
 
 bool FrontierComparator::operator()(ariitk_planning_msgs::Frontier f1, ariitk_planning_msgs::Frontier f2) {

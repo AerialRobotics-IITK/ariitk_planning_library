@@ -4,8 +4,11 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <ariitk_planning_msgs/Frontier.h>
+#include <rviz_visualizer/visualizer.hpp>
 
 namespace ariitk::frontier_explorer {
+
+typedef ariitk::rviz_visualizer::Visualizer Visualizer;
 
 class FrontierComparator {
     public:
@@ -49,6 +52,8 @@ class GoalSelector {
 
         FrontierEvaluator evaluator_;
         FrontierComparator comparator_;
+        
+        Visualizer visualizer_;
 
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_;
