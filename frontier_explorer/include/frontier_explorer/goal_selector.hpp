@@ -35,9 +35,10 @@ class GoalSelector {
     public:
         GoalSelector(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
         void run();
+        ariitk_planning_msgs::Frontier getBestGoal() { return active_goal_; }
         void getActiveFrontiers();
         void scoreFrontiers(std::vector<ariitk_planning_msgs::Frontier>& frontiers);
-        void getBestGoal();
+        void findBestGoal();
         void visualizeActiveFrontiers();
         void visualizeActiveGoal();
 
@@ -52,14 +53,13 @@ class GoalSelector {
 
         FrontierEvaluator evaluator_;
         FrontierComparator comparator_;
-        
+
         Visualizer visualizer_;
 
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_;
         
         ros::Publisher goal_pub_;
-        ros::Publisher active_pub_;
 
         std::vector<ariitk_planning_msgs::Frontier> active_frontiers_;
         ariitk_planning_msgs::Frontiers frontier_cache_;

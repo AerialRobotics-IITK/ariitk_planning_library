@@ -25,7 +25,6 @@ GoalSelector::GoalSelector(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     nh_private_.getParam("slice_level", slice_level_);
     
     goal_pub_ = nh_private_.advertise<geometry_msgs::PoseStamped>("goal", 1);
-    active_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>("active_frontiers", 1);
     
     if(visualize_) {
         visualizer_.init(nh, nh_private);
@@ -36,7 +35,7 @@ GoalSelector::GoalSelector(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
 void GoalSelector::run() {
     evaluator_.run();
     getActiveFrontiers();
-    getBestGoal();
+    findBestGoal();
     if(visualize_) {
         visualizeActiveFrontiers();
         visualizeActiveGoal();
@@ -80,7 +79,7 @@ bool FrontierComparator::operator()(ariitk_planning_msgs::Frontier f1, ariitk_pl
 
     if(cost1 < clear_radius_) cost1 = DBL_MAX;
     else if(cost2 < clear_radius_) cost2 = DBL_MAX;
-    else return ((gain1 - cost1) > (gain2 - cost2));
+    else return ((gain1 - cost1) > (gain2 - cost2)); // need formal policy
 }
 
 void GoalSelector::scoreFrontiers(std::vector<ariitk_planning_msgs::Frontier>& frontiers) {
@@ -88,7 +87,7 @@ void GoalSelector::scoreFrontiers(std::vector<ariitk_planning_msgs::Frontier>& f
     std::sort(frontiers.begin(), frontiers.end(), comparator_);
 }
 
-void GoalSelector::getBestGoal() {
+void GoalSelector::findBestGoal() {
     if(!active_frontiers_.empty()) {
         scoreFrontiers(active_frontiers_);
         active_goal_ = active_frontiers_[0];
