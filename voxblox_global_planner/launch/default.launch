@@ -21,4 +21,9 @@
     <arg name="mav_name"      value="$(arg mav_name)"/>
   </include>
     
+
+	<include file="$(find voxblox_global_planner)/launch/a_star.launch">
+    <arg name="mav_name"      value="$(arg mav_name)"/>
+  </include>
+
 </launch>

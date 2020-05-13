@@ -1,19 +1,17 @@
-#pragma once
 
+#pragma once
 #include <geometry_msgs/PoseArray.h>
 #include<memory>
 
 #include <ros/ros.h>
 #include <voxblox_ros/esdf_server.h>
 #include <Eigen/Eigen>
-
 #include <mav_trajectory_generation/timing.h>
 #include <mav_planning_common/utils.h>
 #include <mav_msgs/conversions.h>
 #include <mav_planning_common/path_visualization.h>
 #include <mav_planning_common/physical_constraints.h>
 #include <mav_planning_msgs/PlannerService.h>
-
 #include <mav_planning_msgs/PlannerService.h>
 #include <mav_visualization/helpers.h>
 #include <std_srvs/Empty.h>
@@ -33,15 +31,12 @@ namespace ariitk::global_planner {
 typedef boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian> Point;
 typedef std::pair<Point, unsigned> Value;
 typedef boost::geometry::index::rtree<Value, boost::geometry::index::quadratic<16>> RTree;
-
 struct GraphNode {
-
     uint id_;
     Eigen::Vector3d position_;
     typedef std::shared_ptr<struct GraphNode> Ptr;
     typedef GraphNode::Ptr Node;
     std::vector<Ptr > neighbours_;
-
     GraphNode(const pcl::PointXYZI& point,uint id);
     void addNeighbour(const Node& node) { neighbours_.push_back(node); }
 };
@@ -49,10 +44,8 @@ struct GraphNode {
 typedef std::shared_ptr<struct GraphNode> Ptr;
 typedef GraphNode::Ptr Node;
 typedef std::vector<Node> Graph;
-
 typedef std::vector<Eigen::Vector3d> Path;
 typedef std::vector<Path> Paths;
-
 class Color : public std_msgs::ColorRGBA {
     public:
         Color() : std_msgs::ColorRGBA() {}
@@ -62,7 +55,6 @@ class Color : public std_msgs::ColorRGBA {
             g = green;
             b = blue;
             a = alpha;
-
         }
 
     static const Color White() { return Color(1.0, 1.0, 1.0); }
@@ -96,14 +88,12 @@ class PathVisualizer {
                        const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
         void visualizeTrajectory(const std::string& topic_name, const mav_msgs::EigenTrajectoryPointVector& trajectory, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::BLACK, const double& size_factor = 1.0);
-
+                       
     private:
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_; 
-
         bool visualize_;
         double voxel_size_;
-
         std::unordered_map<ColorType, Color> color_map_;
         std::unordered_map<std::string, ros::Publisher> publisher_map_;
 };
@@ -139,19 +129,19 @@ class AStarPlanner {
         ros::Publisher waypoint_list_pub_;
         std::string frame_id_;
         bool verbose_;
+
         // Settings for physical constriants.
         mav_planning::PhysicalConstraints constraints_;
-    
-          voxblox::SkeletonGenerator skeleton_generator_;
+        voxblox::SkeletonGenerator skeleton_generator_;
 
         double robot_radius_;
         double voxel_size_;
         RTree tree_;
         PathVisualizer visualizer_;
         bool visualize_;
+
         voxblox::SkeletonAStar skeleton_planner_;
         mav_msgs::EigenTrajectoryPointVector last_waypoints_;
-
 };
 
 }
