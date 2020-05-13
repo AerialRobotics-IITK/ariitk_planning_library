@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <unordered_map>
 #include <visualization_msgs/MarkerArray.h>
 #include <std_msgs/ColorRGBA.h>
 #include <mav_msgs/eigen_mav_msgs.h>

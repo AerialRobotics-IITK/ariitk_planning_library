@@ -22,7 +22,7 @@ class GoalSelector {
         void visualizeActiveGoal();
 
     private:
-        inline std::string getHash(const geometry_msgs::Point& point) const {
+        inline std::string getHash(const geometry_msgs::Point& point) {
             return std::to_string(int(point.x / voxel_size_)) + "," + std::to_string(int(point.y / voxel_size_));
         };
 

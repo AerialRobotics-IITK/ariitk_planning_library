@@ -9,6 +9,11 @@ add_definitions(-std=c++17)
 find_package(Eigen3 REQUIRED)
 include_directories(${Eigen3_INCLUDE_DIRS})
 
+find_package(PCL REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINTIONS})
+
 #############
 # LIBRARIES #
 #############
@@ -17,7 +22,7 @@ cs_add_library(${PROJECT_NAME}
   src/goal_selector.cpp
   src/frontier_comparator.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${Eigen3_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${Eigen3_LIBRARIES} ${PCL_LIBRARIES})
 
 ############
 # BINARIES #
