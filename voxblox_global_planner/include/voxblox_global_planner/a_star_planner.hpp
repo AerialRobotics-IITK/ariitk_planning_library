@@ -127,6 +127,9 @@ class AStarPlanner {
         ros::Publisher path_marker_pub_;
         ros::Publisher sparse_graph_pub_;
         ros::Publisher waypoint_list_pub_;
+        ros::ServiceServer planner_srv_;
+        ros::ServiceServer path_pub_srv_;
+
         std::string frame_id_;
         bool verbose_;
 

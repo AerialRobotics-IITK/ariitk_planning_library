@@ -13,40 +13,34 @@ AStarPlanner::AStarPlanner(const ros::NodeHandle& nh,
                           const ros::NodeHandle& nh_private)
   : nh_(nh),
     nh_private_(nh_private),
-    frame_id_("map"),
-    verbose_(false),
-    voxblox_server_(nh,nh_private),
-    skeleton_generator_() {
-    constraints_.setParametersFromRos(nh_private_);
+    voxblox_server_(nh,nh_private) {
 
     nh_private_.param("robot_radius",robot_radius_,0.45);
     nh_private_.param("visualize",visualize_,true);
+    nh_private_.param("frame_id", frame_id_, frame_id_);
 
-    path_marker_pub_ =
-      nh_private_.advertise<visualization_msgs::MarkerArray>("path", 1, true);
-    sparse_graph_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
-      "sparse_graph", 1, true);
-    waypoint_list_pub_ =
-      nh_.advertise<geometry_msgs::PoseArray>("waypoint_list", 1);
+    esdf_slice_sub_    = nh_private_.subscribe("esdf_slice",1,&AStarPlanner::esdfSliceCallback,this);
+    esdf_slice_pub_    = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_slice_out",1,true);
+    waypoint_list_pub_ = nh_.advertise<geometry_msgs::PoseArray>("waypoint_list", 1);
 
-    esdf_slice_sub_ = nh_private_.subscribe("esdf_slice",1,&AStarPlanner::esdfSliceCallback,this);
-    esdf_slice_pub_ = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_slice_out",1,true);
+    planner_srv_ = nh_private_.advertiseService(
+      "plan", &AStarPlanner::plannerServiceCallback, this);
+    path_pub_srv_ = nh_private_.advertiseService(
+      "publish_path", &AStarPlanner::publishPathCallback, this);
 
     visualizer_.init(nh,nh_private);
     visualizer_.createPublisher("graph");
     visualizer_.createPublisher("path");
 
-    // Set up the A* planners.
-  ROS_INFO("Initializing skeleton planner.");
-  skeleton_planner_.setSkeletonLayer(skeleton_generator_.getSkeletonLayer());
-  skeleton_planner_.setEsdfLayer(
-      voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
-  skeleton_planner_.setMinEsdfDistance(constraints_.robot_radius);
-}
+  }
+
 
 void AStarPlanner::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt) {
     createGraph(start_pt, end_pt);
-    visualizer_.visualizeGraph("graph", graph_);
+    if(visualize_) {
+      visualizer_.visualizeGraph("graph", graph_);
+    }
+
     searchPath(0, 1);
     // if(raw_path_.empty()) { 
     //     ROS_WARN("Plan failed! Adding more nodes!");
@@ -56,7 +50,9 @@ void AStarPlanner::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector
     //     visualizer_.visualizeGraph("graph", graph_);
     //     searchPath(0, 1);
     // }
+
     // visualizer_.visualizePath("path", path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
+
     // shortenPath();
     // if(!short_path_.empty()){
     //     visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.1);
@@ -71,12 +67,14 @@ void AStarPlanner::searchPath(const uint& start_index, const uint& end_index) {
 
     Eigen::Vector3d end_pos = graph_[end_index]->position_;
     typedef std::pair<double, uint> f_score_map;
+
     std::priority_queue<f_score_map, std::vector<f_score_map>, std::greater<f_score_map>> open_set;
     std::vector<double> g_score(graph_.size(), DBL_MAX);
     std::vector<uint> parent(graph_.size(), INT_MAX);
 
     open_set.push(std::make_pair((end_pos - graph_[start_index]->position_).norm(), start_index));
     g_score[start_index] = 0.0;
+
     while(!open_set.empty()) {
         uint curr_index = open_set.top().second;
         Eigen::Vector3d curr_pos = graph_[curr_index]->position_;
@@ -97,6 +95,7 @@ void AStarPlanner::searchPath(const uint& start_index, const uint& end_index) {
         for(auto& neigh : graph_[curr_index]->neighbours_) {
             uint neigh_index = neigh->id_;
             Eigen::Vector3d neigh_pos = neigh->position_;
+
             double score = g_score[curr_index] + (neigh_pos - curr_pos).norm();
             if(score < g_score[neigh_index]) {
                 g_score[neigh_index] = score;
@@ -108,28 +107,32 @@ void AStarPlanner::searchPath(const uint& start_index, const uint& end_index) {
 }
 
 void AStarPlanner::createGraph(const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+
   pcl::PointXYZI Start;
   pcl::PointXYZI End;
 
   Start.x = start.x();
   Start.y = start.y();
   Start.z = start.z();
+
   End.x = end.x();
   End.y = end.y();
   End.z = end.z();
 
   graph_.push_back(Node(new GraphNode(Start, 0)));
   graph_.push_back(Node(new GraphNode(End, 1)));
-  uint i=2;
-  graph_.clear();
 
+  uint i=2;
+
+  graph_.clear();
   for(auto& point : pointcloud_.points) {
     if(point.intensity > robot_radius_) {
       graph_.push_back(Node(new GraphNode(point,i++)));
     }
   }
-
+  
   tree_.clear();
+
   for(auto& node : graph_) {
     Point pt = Point(node->position_.x(),node->position_.y(),node->position_.z());
     tree_.insert(std::make_pair(pt, node->id_));
@@ -150,8 +153,10 @@ void AStarPlanner::createGraph(const Eigen::Vector3d& start, const Eigen::Vector
 
 void PathVisualizer::init(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private) {
     nh_ = nh; nh_private_ = nh_private;
+    
     nh_private_.getParam("visualize", visualize_);
     nh_private_.getParam("voxel_size", voxel_size_);
+
     color_map_.insert(std::make_pair(PathVisualizer::ColorType::WHITE,      Color::White()));
     color_map_.insert(std::make_pair(PathVisualizer::ColorType::BLACK,      Color::Black()));
     color_map_.insert(std::make_pair(PathVisualizer::ColorType::BLUE,       Color::Blue()));
@@ -174,8 +179,10 @@ void PathVisualizer::createPublisher(const std::string& topic_name) {
 void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& graph,
                         const std::string& frame_id, const ColorType& vertex_color, const ColorType& edge_color, const double& size_factor) {
   if(graph.empty()) {return;}
+
   visualization_msgs::MarkerArray markers;  
   visualization_msgs::Marker vertex_marker;
+
   vertex_marker.header.frame_id = frame_id;
   vertex_marker.header.stamp = ros::Time::now();
   vertex_marker.ns = "vertices";
@@ -184,6 +191,7 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
   vertex_marker.scale.x = vertex_marker.scale.y = vertex_marker.scale.z = voxel_size_ * 0.1;
   vertex_marker.action = visualization_msgs::Marker::ADD;
   vertex_marker.color = color_map_[vertex_color];
+
       for(auto& node : graph) {
         geometry_msgs::Point point;
         Eigen::Vector3d pos = node->position_;
@@ -193,6 +201,7 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
         vertex_marker.points.push_back(point);
     }
     markers.markers.push_back(vertex_marker);
+
     visualization_msgs::Marker edge_marker;
     edge_marker.header.frame_id = frame_id;
     edge_marker.header.stamp = ros::Time::now();
@@ -202,22 +211,28 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
     edge_marker.scale.x = edge_marker.scale.y = edge_marker.scale.z = 0.005;
     edge_marker.action = visualization_msgs::Marker::ADD;
     edge_marker.color = color_map_[edge_color];
+
     for(auto& node : graph) {
         geometry_msgs::Point start_point;
         Eigen::Vector3d start_pos = node->position_;
+
         start_point.x = start_pos.x();
         start_point.y = start_pos.y();
         start_point.z = start_pos.z();
+
         for(auto& neigh : node->neighbours_) {
             geometry_msgs::Point end_point;
             Eigen::Vector3d end_pos = neigh->position_;
+
             end_point.x = end_pos.x();
             end_point.y = end_pos.y();
             end_point.z = end_pos.z();
+
             edge_marker.points.push_back(start_point);
             edge_marker.points.push_back(end_point);
         }
         markers.markers.push_back(edge_marker);
+
     }
   publisher_map_[topic_name].publish(markers);
 }
@@ -225,6 +240,7 @@ void PathVisualizer::visualizeGraph(const std::string& topic_name, const Graph& 
 void PathVisualizer::visualizePath(const std::string& topic_name, const std::vector<Eigen::Vector3d>& path, 
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
     if(path.empty()) { return; }
+
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
@@ -234,10 +250,12 @@ void PathVisualizer::visualizePath(const std::string& topic_name, const std::vec
     marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * size_factor;
     marker.action = visualization_msgs::Marker::ADD;
     marker.color = color_map_[color];
+
     geometry_msgs::Point prev_center;
     prev_center.x = path[0].x();
     prev_center.y = path[0].y();
     prev_center.z = path[0].z();
+
     for(uint i = 1; i < path.size(); i++) {
         marker.points.push_back(prev_center);
         geometry_msgs::Point center;
@@ -247,6 +265,7 @@ void PathVisualizer::visualizePath(const std::string& topic_name, const std::vec
         marker.points.push_back(center);
         prev_center = center;
     }
+    
     visualization_msgs::MarkerArray markers;
     markers.markers.push_back(marker);
     publisher_map_[topic_name].publish(markers);
@@ -257,25 +276,31 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
   mav_msgs::EigenTrajectoryPoint start_pose, goal_pose;
   mav_msgs::eigenTrajectoryPointFromPoseMsg(request.start_pose, &start_pose);
   mav_msgs::eigenTrajectoryPointFromPoseMsg(request.goal_pose, &goal_pose);
+
   ROS_INFO("Planning path.");
-  // findPath(start_pose, goal_pose);
+  findPath(start_pose.position_W, goal_pose.position_W);
+  
   voxblox::Point start_point =
       start_pose.position_W.cast<voxblox::FloatingPoint>();
   voxblox::Point goal_point =
       goal_pose.position_W.cast<voxblox::FloatingPoint>();
+
   visualization_msgs::MarkerArray marker_array;
   bool shorten_graph = true;
   voxblox::AlignedVector<voxblox::Point> diagram_coordinate_path;
   mav_trajectory_generation::timing::Timer astar_diag_timer(
       "plan/astar_diag");
+
   bool success = skeleton_planner_.getPathUsingEsdfAndDiagram(
       start_point, goal_point, &diagram_coordinate_path);
   mav_msgs::EigenTrajectoryPointVector diagram_path;
+
   for (const voxblox::Point &voxblox_point : diagram_coordinate_path) {
     mav_msgs::EigenTrajectoryPoint point;
     point.position_W = voxblox_point.cast<double>();
     diagram_path.push_back(point);
   }
+
   double path_length = mav_planning::computePathLength(diagram_path);
   int num_vertices = diagram_path.size();
   astar_diag_timer.Stop();
@@ -284,6 +309,7 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
         diagram_path, frame_id_, mav_visualization::Color::Purple(),
       "astar_diag", 0.1));
   }
+
   ROS_INFO("Diag A* Success? %d Path length: %f Vertices: %d", success,
             path_length, num_vertices);
   if (shorten_graph) {
@@ -295,6 +321,7 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
     num_vertices = short_path.size();
     ROS_INFO("Diagram Shorten Success? %d Path length: %f Vertices: %d",
               success, path_length, num_vertices);
+
     if (visualize_)
     {
       marker_array.markers.push_back(mav_planning::createMarkerForPath(
@@ -304,14 +331,17 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
     shorten_timer.Stop();
     last_waypoints_ = short_path;
   }
+
   if (visualize_) {
     path_marker_pub_.publish(marker_array);
   }
+
   if (verbose_) {
     ROS_INFO_STREAM("All timings: "
                   << std::endl
                   << mav_trajectory_generation::timing::Timing::Print());
   }
+
 }
 
 bool AStarPlanner::publishPathCallback(std_srvs::EmptyRequest& request,
@@ -330,10 +360,10 @@ bool AStarPlanner::publishPathCallback(std_srvs::EmptyRequest& request,
 }
 
 void AStarPlanner::esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud) {
+
   pointcloud_ = pointcloud;
   esdf_slice_pub_.publish(pointcloud_);
+  
 }
+
 }
-
-
-

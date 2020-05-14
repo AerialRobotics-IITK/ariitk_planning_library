@@ -10,11 +10,8 @@
             <remap from="pointcloud"                to="vi_sensor/camera_depth/depth/points"/>
             <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
             <remap from="voxblox_node/tsdf_map_out" to="tsdf_map" />
-<<<<<<< HEAD
             <remap from="voxblox_node/esdf_slice"   to="esdf_slice" />
-=======
-						<remap from="voxblox_node/esdf_slice"   to="esdf_slice" />
->>>>>>> 95a6c177c91e7acbe32c44bd1adbd89279da720f
+			<remap from="voxblox_node/esdf_slice"   to="esdf_slice" />
         </node>
     </group>
     
