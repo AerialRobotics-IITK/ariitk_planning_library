@@ -11,7 +11,6 @@
             <remap from="voxblox_node/esdf_map_out" to="esdf_map" />
             <remap from="voxblox_node/tsdf_map_out" to="tsdf_map" />
             <remap from="voxblox_node/esdf_slice"   to="esdf_slice" />
-			<remap from="voxblox_node/esdf_slice"   to="esdf_slice" />
         </node>
     </group>
     

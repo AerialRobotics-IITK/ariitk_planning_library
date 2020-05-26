@@ -4,33 +4,36 @@
 #include<memory>
 
 #include <ros/ros.h>
-#include <voxblox_ros/esdf_server.h>
 #include <Eigen/Eigen>
 #include <mav_trajectory_generation/timing.h>
 #include <mav_planning_common/utils.h>
 #include <mav_msgs/conversions.h>
+#include <mav_msgs/eigen_mav_msgs.h>
 #include <mav_planning_common/path_visualization.h>
 #include <mav_planning_common/physical_constraints.h>
 #include <mav_planning_msgs/PlannerService.h>
-#include <mav_planning_msgs/PlannerService.h>
 #include <mav_visualization/helpers.h>
-#include <std_srvs/Empty.h>
 #include <pcl/pcl_macros.h>
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <std_msgs/ColorRGBA.h>
+#include <std_srvs/Empty.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <mav_msgs/eigen_mav_msgs.h>
+#include <voxblox_planning_common/path_shortening.h>
+#include <voxblox_ros/esdf_server.h>
+#include <voxblox_skeleton/ros/skeleton_vis.h>
 #include <voxblox_skeleton/skeleton_planner.h>
 #include <voxblox_skeleton/skeleton_generator.h>
+#include <voxblox_skeleton/sparse_graph_planner.h>
 
 namespace ariitk::global_planner {
 
 typedef boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian> Point;
 typedef std::pair<Point, unsigned> Value;
 typedef boost::geometry::index::rtree<Value, boost::geometry::index::quadratic<16>> RTree;
+
 struct GraphNode {
     uint id_;
     Eigen::Vector3d position_;
@@ -93,7 +96,7 @@ class PathVisualizer {
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_; 
         bool visualize_;
-        double voxel_size_;
+        double voxel_size_; // Cache the size of the voxels used by the map.
         std::unordered_map<ColorType, Color> color_map_;
         std::unordered_map<std::string, ros::Publisher> publisher_map_;
 };
@@ -106,6 +109,9 @@ class AStarPlanner {
         bool publishPathCallback(std_srvs::EmptyRequest& request,
                                 std_srvs::EmptyResponse& response);
         double getMapDistance(const Eigen::Vector3d& position);
+        void generateSparseGraph();
+        void skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf_layer);
+
 
     private:
         void createGraph(const Eigen::Vector3d& start_pose, const Eigen::Vector3d& goal_pose);
@@ -144,6 +150,8 @@ class AStarPlanner {
         bool visualize_;
 
         voxblox::SkeletonAStar skeleton_planner_;
+        mav_planning::EsdfPathShortener path_shortener_;
+
         mav_msgs::EigenTrajectoryPointVector last_waypoints_;
 };
 

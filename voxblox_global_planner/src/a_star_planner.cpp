@@ -13,11 +13,21 @@ AStarPlanner::AStarPlanner(const ros::NodeHandle& nh,
                           const ros::NodeHandle& nh_private)
   : nh_(nh),
     nh_private_(nh_private),
-    voxblox_server_(nh,nh_private) {
-
+    frame_id_("map"),
+    visualize_(true),
+    verbose_(false),
+    voxblox_server_(nh,nh_private),
+    skeleton_generator_() {
+    constraints_.setParametersFromRos(nh_private_);
+    
     nh_private_.param("robot_radius",robot_radius_,0.45);
     nh_private_.param("visualize",visualize_,true);
     nh_private_.param("frame_id", frame_id_, frame_id_);
+
+    path_marker_pub_ =
+      nh_private_.advertise<visualization_msgs::MarkerArray>("path", 1, true);
+    sparse_graph_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>(
+      "sparse_graph", 1, true);  
 
     esdf_slice_sub_    = nh_private_.subscribe("esdf_slice",1,&AStarPlanner::esdfSliceCallback,this);
     esdf_slice_pub_    = nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >("esdf_slice_out",1,true);
@@ -28,9 +38,28 @@ AStarPlanner::AStarPlanner(const ros::NodeHandle& nh,
     path_pub_srv_ = nh_private_.advertiseService(
       "publish_path", &AStarPlanner::publishPathCallback, this);
 
+    voxblox_server_.setTraversabilityRadius(constraints_.robot_radius);
+
+    // Now set up the skeleton generator.
+    ROS_INFO("Initializing skeleton generator.");
+    skeletonize(voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
+
+  // Set up the A* planners.
+    ROS_INFO("Initializing skeleton planner.");
+    skeleton_planner_.setSkeletonLayer(skeleton_generator_.getSkeletonLayer());
+    skeleton_planner_.setEsdfLayer(
+        voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
+    skeleton_planner_.setMinEsdfDistance(constraints_.robot_radius);  
+
     visualizer_.init(nh,nh_private);
     visualizer_.createPublisher("graph");
     visualizer_.createPublisher("path");
+
+    // Set up shortener.
+    ROS_INFO("Initializing path shortener.");
+    path_shortener_.setEsdfLayer(
+        voxblox_server_.getEsdfMapPtr()->getEsdfLayerPtr());
+    path_shortener_.setConstraints(constraints_);
 
   }
 
@@ -118,13 +147,15 @@ void AStarPlanner::createGraph(const Eigen::Vector3d& start, const Eigen::Vector
   End.x = end.x();
   End.y = end.y();
   End.z = end.z();
+  
+  graph_.clear();
 
   graph_.push_back(Node(new GraphNode(Start, 0)));
   graph_.push_back(Node(new GraphNode(End, 1)));
 
   uint i=2;
 
-  graph_.clear();
+  // graph_.clear();
   for(auto& point : pointcloud_.points) {
     if(point.intensity > robot_radius_) {
       graph_.push_back(Node(new GraphNode(point,i++)));
@@ -271,6 +302,27 @@ void PathVisualizer::visualizePath(const std::string& topic_name, const std::vec
     publisher_map_[topic_name].publish(markers);
 }
 
+void AStarPlanner::generateSparseGraph() {
+  ROS_INFO("About to generate skeleton graph.");
+
+  skeleton_generator_.updateSkeletonFromLayer();
+  skeleton_generator_.generateSparseGraph();
+  ROS_INFO("Generated skeleton graph.");
+
+  if (visualize_) {
+    // Now visualize the graph.
+    const voxblox::SparseSkeletonGraph& graph =
+        skeleton_generator_.getSparseGraph();
+    visualization_msgs::MarkerArray marker_array;
+    voxblox::visualizeSkeletonGraph(graph, frame_id_, &marker_array);
+    sparse_graph_pub_.publish(marker_array);
+  }
+  if (verbose_){
+    ROS_INFO_STREAM("[GP] Generation timings: " << std::endl
+                                                << voxblox::timing::Timing::Print());
+  }
+}
+
 bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceRequest& request,
                                           mav_planning_msgs::PlannerServiceResponse& response) {
   mav_msgs::EigenTrajectoryPoint start_pose, goal_pose;
@@ -278,6 +330,13 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
   mav_msgs::eigenTrajectoryPointFromPoseMsg(request.goal_pose, &goal_pose);
 
   ROS_INFO("Planning path.");
+  skeleton_generator_.generateSkeleton();
+  generateSparseGraph();
+  if (verbose_) {
+    ROS_INFO("Finished generating sparse graph.");
+    ROS_INFO_STREAM("Total Timings: " << std::endl
+                                      << voxblox::timing::Timing::Print());
+  }
   findPath(start_pose.position_W, goal_pose.position_W);
   
   voxblox::Point start_point =
@@ -304,6 +363,7 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
   double path_length = mav_planning::computePathLength(diagram_path);
   int num_vertices = diagram_path.size();
   astar_diag_timer.Stop();
+  
   if (visualize_) {
     marker_array.markers.push_back(mav_planning::createMarkerForPath(
         diagram_path, frame_id_, mav_visualization::Color::Purple(),
@@ -316,7 +376,7 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
     mav_trajectory_generation::timing::Timer shorten_timer(
         "plan/astar_diag/shorten");
     mav_msgs::EigenTrajectoryPointVector short_path;
-    // path_shortener_.shortenPath(diagram_path, &short_path);
+    path_shortener_.shortenPath(diagram_path, &short_path);
     path_length = mav_planning::computePathLength(short_path);
     num_vertices = short_path.size();
     ROS_INFO("Diagram Shorten Success? %d Path length: %f Vertices: %d",
@@ -359,11 +419,37 @@ bool AStarPlanner::publishPathCallback(std_srvs::EmptyRequest& request,
   return true;
 }
 
+void AStarPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf_layer) {
+  skeleton_generator_.setEsdfLayer(esdf_layer);
+
+  voxblox::FloatingPoint min_separation_angle =
+      skeleton_generator_.getMinSeparationAngle();
+  nh_private_.param("min_separation_angle", min_separation_angle,
+                    min_separation_angle);
+  skeleton_generator_.setMinSeparationAngle(min_separation_angle);
+  bool generate_by_layer_neighbors =
+      skeleton_generator_.getGenerateByLayerNeighbors();
+  nh_private_.param("generate_by_layer_neighbors", generate_by_layer_neighbors,
+                    generate_by_layer_neighbors);
+  skeleton_generator_.setGenerateByLayerNeighbors(generate_by_layer_neighbors);
+
+  int num_neighbors_for_edge = skeleton_generator_.getNumNeighborsForEdge();
+  nh_private_.param("num_neighbors_for_edge", num_neighbors_for_edge,
+                    num_neighbors_for_edge);
+  skeleton_generator_.setNumNeighborsForEdge(num_neighbors_for_edge);
+
+  skeleton_generator_.setMinGvdDistance(constraints_.robot_radius);
+}
+
 void AStarPlanner::esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud) {
 
   pointcloud_ = pointcloud;
   esdf_slice_pub_.publish(pointcloud_);
-  
+
+  if(visualize_) {
+      visualizer_.visualizeGraph("graph", graph_);
+    }
+
 }
 
 }
