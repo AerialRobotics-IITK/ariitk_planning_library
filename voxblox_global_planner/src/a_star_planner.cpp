@@ -402,6 +402,8 @@ bool AStarPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceReque
                   << mav_trajectory_generation::timing::Timing::Print());
   }
 
+  visualizer_.visualizePath("path", path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
+  
 }
 
 bool AStarPlanner::publishPathCallback(std_srvs::EmptyRequest& request,
@@ -445,6 +447,10 @@ void AStarPlanner::esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud)
 
   pointcloud_ = pointcloud;
   esdf_slice_pub_.publish(pointcloud_);
+
+  Eigen::Vector3d start(1,2,3);
+  Eigen::Vector3d end(0,1,2);
+  createGraph(start,end);
 
   if(visualize_) {
       visualizer_.visualizeGraph("graph", graph_);
