@@ -23,22 +23,15 @@ namespace ariitk::global_planner {
 
 class SkeletonGlobalPlanner {
  public:
-  SkeletonGlobalPlanner(const ros::NodeHandle& nh,
-                        const ros::NodeHandle& nh_private);
+  SkeletonGlobalPlanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   virtual ~SkeletonGlobalPlanner() {}
 
   void generateSparseGraph();
 
-  bool plannerServiceCallback(
-      mav_planning_msgs::PlannerServiceRequest& request,
-      mav_planning_msgs::PlannerServiceResponse& response);
+  bool plannerServiceCallback(mav_planning_msgs::PlannerServiceRequest& request, mav_planning_msgs::PlannerServiceResponse& response);
+  bool publishPathCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response);
 
-  bool publishPathCallback(std_srvs::EmptyRequest& request,
-                           std_srvs::EmptyResponse& response);
-
-  void convertCoordinatePathToPath(
-      const voxblox::AlignedVector<voxblox::Point>& coordinate_path,
-      mav_msgs::EigenTrajectoryPointVector& path);
+  void convertCoordinatePathToPath(const voxblox::AlignedVector<voxblox::Point>& coordinate_path, mav_msgs::EigenTrajectoryPointVector& path);
 
   bool getMapDistance(const Eigen::Vector3d& position, double& distance);
   bool getMapDistanceAndGradient(const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient);

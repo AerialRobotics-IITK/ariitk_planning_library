@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
   ROS_INFO("Initialized skeleton global planner node.");
 
   ros::Rate loop_rate(10);
-  
+
   while(ros::ok()) {
     ros::spinOnce();
     loop_rate.sleep();
