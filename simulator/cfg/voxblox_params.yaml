@@ -10,16 +10,16 @@ publish_pointclouds: false          # If true the tsdf and esdf (if generated) i
 publish_slices: false               # Whether to publish TSDF and ESDF pointcloud slices at the height specified by $slice_level
 publish_traversable: false          # Whether to display a traversability pointcloud from the ESDF server.
 
-update_mesh_every_n_sec: 0.25       # Rate at which the mesh topic will be published to, a value of 0 disables. 
+update_mesh_every_n_sec: 0.25       # Rate at which the mesh topic will be published to, in *seconds*, a value of 0 disables
                                     # This will not trigger any other mesh operations, such as generating a ply file.
-update_esdf_every_n_sec: 0.25       # How often the ESDF map should be updated
-publish_map_every_n_sec: 0.25       # Rate at which the TSDF and ESDF maps are published, if they are published.
+update_esdf_every_n_sec: 0.25       # How often the ESDF map should be updated, in *seconds*
+publish_map_every_n_sec: 0.25       # Rate at which the TSDF and ESDF maps are published, if they are published, in *seconds*
 
 method: fast                        # TSDF integrator method: can be 'simple', 'merged', or 'fast'
-tsdf_voxel_size: 0.2                # Size of the tsdf voxels, in meters
+tsdf_voxel_size: 0.2                # Size of the tsdf voxels, in *meters*
 tsdf_voxels_per_side: 16            # TSDF voxels per side of an allocated block. Must be a power of 2
-esdf_max_distance_m: 2.0            # The maximum distance that the esdf will be calculated out to.
-max_ray_length_m: 10.0              # The maximum range out to which a ray will be cast
+esdf_max_distance_m: 2.0            # The maximum distance that the esdf will be calculated out to, in *meters*
+max_ray_length_m: 10.0              # The maximum range out to which a ray will be cast, in *meters*
 voxel_carving_enabled: true         # If true, the entire length of a ray is integrated, 
                                     # if false only the region inside the truncation distance is used.
 color_mode: height                  # The method that will be used for coloring the mesh. 
@@ -27,11 +27,11 @@ color_mode: height                  # The method that will be used for coloring 
 
 min_time_between_msgs_sec: 0.1      # Minimum time to wait after integrating a message before accepting a new one.
 clear_sphere_for_planning: true     # The size of the queue used to subscribe to pointclouds.
-occupied_sphere_radius: 4.0         # Radius of the outer sphere where unknown is set to occupied, in meters.
-clear_sphere_radius: 0.7            # Radius of the inner sphere where unknown is set to free, in meters.
+occupied_sphere_radius: 4.0         # Radius of the outer sphere where unknown is set to occupied, in *meters*.
+clear_sphere_radius: 0.7            # Radius of the inner sphere where unknown is set to free, in *meters*.
                                     # Recommended to set slightly more than the robot radius
-slice_level: 1.0                    # The height at which generated tsdf and esdf slices will be made.
+slice_level: 1.0                    # The height at which generated tsdf and esdf slices will be made, in *meters*
 esdf_add_occupied_crust: true       # Whether to add an outside layer of occupied voxels. 
                                     # Basically just sets all unknown voxels in the allocated blocks to occupied.
 esdf_min_diff_m: 0.0                # For cheaper but less accurate map updates: the minimum difference in
-                                    # a voxel distance, before the change is propagated.
+                                    # a voxel distance, before the change is propagated. in *meters*

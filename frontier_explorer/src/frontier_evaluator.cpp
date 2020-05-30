@@ -10,7 +10,9 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     nh_private.getParam("frame_id", frame_id_);
     nh_private.getParam("surface_distance_threshold_factor", surface_distance_threshold_factor_);
     nh_private.getParam("slice_level", slice_level_);
-    nh_private.getParam("height_range", height_range_);
+    nh_private.getParam("upper_range", upper_range_);
+    nh_private.getParam("lower_range", lower_range_);
+    nh_private.getParam("min_frontier_size", min_frontier_size_);
     CHECK(esdf_server_.getEsdfMapPtr());
 
     constraints_.setParametersFromRos(nh_private);
@@ -60,11 +62,70 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, -vs));
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, -vs));
     }
+
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, 0, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(0, 2*vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, 2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, 2*vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, vs, -0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(2*vs, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-2*vs, -vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(-vs, -2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, 2*vs, 0));
+    planar_neighbor_voxels_.push_back(Eigen::Vector3d(vs, -2*vs, -0));
+
+    ROS_INFO("%lf", min_frontier_size_);
+}
+
+void FrontierEvaluator::run() {
+    frontiers_.clear();
+    frontiers_msg_.frontiers.clear();
+    hash_map_.clear();
+    findFrontiers();
+    clusterFrontiers();
+    if (visualize_) {
+        visualization_msgs::MarkerArray frontier_marker;
+        createMarkerFromFrontiers(&frontier_marker);
+        frontier_pub_.publish(frontier_marker);
+        visualizeVoxelStates();
+    }
+}
+
+void FrontierEvaluator::findFrontiers() {
+    size_t vps = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
+    size_t num_voxels_per_block = vps * vps * vps;
+
+    voxblox::BlockIndexList blocks;
+    esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+    for (const auto &index : blocks) {
+        const voxblox::Block<voxblox::TsdfVoxel> &block = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
+        for (size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
+            Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
+            if (isFrontierVoxel(coord)){
+                coord(2,0) = slice_level_;
+                hash_map_[getHash(coord)] = coord;
+            }
+        }
+    }
 }
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     if(getVoxelState(voxel) != VoxelState::FREE) { return false; }
-    if(fabs(slice_level_ - voxel(2,0)) >= height_range_) { return false; }
+    if((slice_level_ - voxel(2,0)) >= lower_range_ || (voxel(2,0) - slice_level_) >= upper_range_) { return false; }
     VoxelState voxel_state;
     for(auto& neighbour : neighbor_voxels_) {
         voxel_state = getVoxelState(voxel + neighbour);
@@ -86,7 +147,7 @@ VoxelState FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
             return VoxelState::UNKNOWN;
         }
     } else {
-        return VoxelState::UNKNOWN;
+        return VoxelState::OCCUPIED;
     }
 }
 
@@ -118,12 +179,42 @@ bool FrontierEvaluator::getVoxelWeight(const Eigen::Vector3d& point, double& wei
     return false;
 }
 
+void FrontierEvaluator::clusterFrontiers() {
+    while(!hash_map_.empty()) {
+        Frontier frontier;
+        findNeighbours(hash_map_.begin()->first, frontier);
+        if(frontier.points.size() < min_frontier_size_) { continue; }
+        frontiers_.push_back(frontier);
+
+        ariitk_planning_msgs::Frontier frontier_msg;
+        convertFrontierToMsg(frontier, frontier_msg);
+        frontiers_msg_.frontiers.push_back(frontier_msg);
+    }
+}
+
+void FrontierEvaluator::findNeighbours(const std::string& key, Frontier& frontier) {
+    auto point = hash_map_.at(key);
+    hash_map_.erase(key);
+    frontier.center = (frontier.center * frontier.points.size() + point) / 
+                        (frontier.points.size() + 1);
+    frontier.points.push_back(point);
+    for (auto& next_point: planar_neighbor_voxels_) {
+        auto hash = getHash(point + next_point);
+        if (hash_map_.find(hash) != hash_map_.end()) {
+            findNeighbours(hash, frontier);
+        }
+    }
+}
+
+void FrontierEvaluator::convertFrontierToMsg(const Frontier& frontier, ariitk_planning_msgs::Frontier& msg) {
+    msg.center.x = frontier.center.x();
+    msg.center.y = frontier.center.y();
+    msg.center.z = frontier.center.z();
+    msg.num_points = frontier.points.size();
+}
+
 void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArray* markers) {
     CHECK_NOTNULL(markers);
-    
-    size_t vps = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
-    size_t num_voxels_per_block = vps * vps * vps;
-
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id_;
     marker.ns = "frontier_voxels";
@@ -136,28 +227,31 @@ void FrontierEvaluator::createMarkerFromFrontiers(visualization_msgs::MarkerArra
     marker.color.b = 1.0;
     marker.color.a = 1.0;
 
-    voxblox::BlockIndexList blocks;
-    esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
-    for(const auto& index : blocks) {
-        const voxblox::Block<voxblox::TsdfVoxel>& block = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
+    visualization_msgs::Marker center = marker;
+    center.ns = "center";
+    center.color.r = 0.0;
+    center.scale.x = center.scale.y = center.scale.y = voxel_size_ * 2.0;
 
-        for(size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
-            Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
-            if(isFrontierVoxel(coord)) {
-                geometry_msgs::Point cube_center;
-                cube_center.x = coord.x();
-                cube_center.y = coord.y();
-                cube_center.z = coord.z();
-                marker.points.push_back(cube_center);
-            }
+    for (const auto& frontier : frontiers_) {
+        for (const auto& point : frontier.points) {
+            geometry_msgs::Point cube_center;
+            cube_center.x = point.x();
+            cube_center.y = point.y();
+            cube_center.z = point.z();
+            marker.points.push_back(cube_center);
         }
-    }   
+        geometry_msgs::Point cube_center;
+        cube_center.x = frontier.center.x();
+        cube_center.y = frontier.center.y();
+        cube_center.z = frontier.center.z();
+        center.points.push_back(cube_center);
+    }
     markers->markers.push_back(marker);
+    markers->markers.push_back(center);
 }
 
 void FrontierEvaluator::createMarkerFromVoxelStates(visualization_msgs::MarkerArray* markers) {
     CHECK_NOTNULL(markers);
-
     size_t vps = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
     size_t num_voxels_per_block = vps * vps * vps;
 
@@ -220,17 +314,9 @@ void FrontierEvaluator::createMarkerFromVoxelStates(visualization_msgs::MarkerAr
             }
         }
     }
-
     markers->markers.push_back(free_marker);
     markers->markers.push_back(occupied_marker);
     markers->markers.push_back(unknown_marker);
-}
-
-void FrontierEvaluator::visualizeFrontiers() {
-    if(!visualize_) { return; }
-    visualization_msgs::MarkerArray frontier_marker;
-    createMarkerFromFrontiers(&frontier_marker);
-    frontier_pub_.publish(frontier_marker);
 }
 
 void FrontierEvaluator::visualizeVoxelStates() {

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ariitk_planning_msgs</name>
+  <version>0.0.0</version>
+  <description>The ariitk_planning_msgs package</description>
+
+  <maintainer email="ashwins@iitk.ac.in">Ashwin Shenai</maintainer>
+  <maintainer email="gajendarnagar02@gmail.com">Gajendra Nagar</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+
+  <depend>geometry_msgs</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+</package>

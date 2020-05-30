@@ -39,7 +39,8 @@ class SkeletonGlobalPlanner {
       const voxblox::AlignedVector<voxblox::Point>& coordinate_path,
       mav_msgs::EigenTrajectoryPointVector& path);
 
-  double getMapDistance(const Eigen::Vector3d& position);
+  bool getMapDistance(const Eigen::Vector3d& position, double& distance);
+  bool getMapDistanceAndGradient(const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient);
 
   void skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf_layer);
 

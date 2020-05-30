@@ -98,7 +98,8 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
                                       << voxblox::timing::Timing::Print());
   }
 
-  if (getMapDistance(goal_pose.position_W) < constraints_.robot_radius) {
+  double goal_distance = 0.0;
+  if (getMapDistance(goal_pose.position_W, goal_distance) && goal_distance < constraints_.robot_radius) {
     ROS_WARN("Goal pose occupied! Planning to Nearest Free Point");
     Eigen::Vector3d new_goal_pos;
     if(!getNearestFreeSpaceToPoint(goal_pose.position_W, new_goal_pos)) {
@@ -108,15 +109,15 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
     goal_pose.position_W = new_goal_pos;
   }
 
-  if (getMapDistance(start_pose.position_W) < constraints_.robot_radius) {
-  ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
-  Eigen::Vector3d new_start_pos;
-  if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
-    ROS_ERROR("No free points near start pose, and start pose is occupied!");
-    return false;
-  }
-  start_pose.position_W = new_start_pos;
-  return false;
+  double start_distance = 0.0;
+  if (getMapDistance(start_pose.position_W, start_distance) && start_distance < constraints_.robot_radius) {
+    ROS_WARN("Start pose occupied! Planning to Nearest Free Point");
+    Eigen::Vector3d new_start_pos;
+    if(!getNearestFreeSpaceToPoint(start_pose.position_W, new_start_pos)) {
+      ROS_ERROR("No free points near start pose, and start pose is occupied!");
+      return false;
+    }
+    start_pose.position_W = new_start_pos;
   }
 
   voxblox::Point start_point =
@@ -180,18 +181,25 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(
   }
 }
 
-double SkeletonGlobalPlanner::getMapDistance(
-    const Eigen::Vector3d& position) {
-  if (!voxblox_server_.getEsdfMapPtr()) {
-    return 0.0;
-  }
-  double distance = 0.0;
+bool SkeletonGlobalPlanner::getMapDistance(
+    const Eigen::Vector3d& position, double& distance) {
+  if (!voxblox_server_.getEsdfMapPtr()) { return false; }
   if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position,
                                                               &distance)) {
-    return 0.0;
+    return false;
   }
-  return distance;
+  return true;
 }
+
+bool SkeletonGlobalPlanner::getMapDistanceAndGradient(
+    const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient) {
+  if(!voxblox_server_.getEsdfMapPtr()->
+    getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) {
+    return false;
+  }
+  return true;
+}
+
 
 bool SkeletonGlobalPlanner::publishPathCallback(
     std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response) {
@@ -232,7 +240,7 @@ void SkeletonGlobalPlanner::skeletonize(voxblox::Layer<voxblox::EsdfVoxel> *esdf
   skeleton_generator_.setMinGvdDistance(constraints_.robot_radius);
 }
 
-bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos, 
+bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& pos,
     Eigen::Vector3d& new_pos) {  
   const double angle_step = 0.1;
   const size_t max_iterations = 10;
