@@ -7,7 +7,7 @@
         <remap from="frontier_explorer/tsdf_map_in" to="tsdf_map" />
 
         <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
-        <rosparam file="$(find frontier_explorer)/cfg/params.yaml" command="load" />
+        <rosparam file="$(find frontier_explorer)/cfg/params.yaml"      command="load" />
       </node>
   </group>
 

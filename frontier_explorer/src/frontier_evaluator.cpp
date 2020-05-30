@@ -4,17 +4,17 @@ namespace ariitk::frontier_explorer {
 
 FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     :  esdf_server_(nh, nh_private) {
-    
+
     nh_private.getParam("accurate_frontiers", accurate_frontiers_);
-    nh_private.getParam("checking_distance", checking_dist_);
-    nh_private.getParam("visualize", visualize_);
-    nh_private.getParam("frame_id", frame_id_);
-    nh_private.getParam("surface_distance_threshold_factor", surface_distance_threshold_factor_);
-    nh_private.getParam("slice_level", slice_level_);
-    nh_private.getParam("upper_range", upper_range_);
-    nh_private.getParam("lower_range", lower_range_);
-    nh_private.getParam("min_frontier_size", min_frontier_size_);
-    
+    nh_private.getParam("checking_distance",  checking_dist_);
+    nh_private.getParam("visualize",          visualize_);
+    nh_private.getParam("frame_id",           frame_id_);
+    nh_private.getParam("occupancy_distance", occupancy_distance_);
+    nh_private.getParam("slice_level",        slice_level_);
+    nh_private.getParam("upper_range",        upper_range_);
+    nh_private.getParam("lower_range",        lower_range_);
+    nh_private.getParam("min_frontier_size",  min_frontier_size_);
+
     CHECK(esdf_server_.getTsdfMapPtr());
 
     constraints_.setParametersFromRos(nh_private);
@@ -25,12 +25,14 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
 
     auto vs = voxel_size_ * checking_dist_;
     if(!accurate_frontiers_) {
+
         neighbor_voxels_.push_back(Eigen::Vector3d(vs, 0, 0));
         neighbor_voxels_.push_back(Eigen::Vector3d(-vs, 0, 0));
         neighbor_voxels_.push_back(Eigen::Vector3d(0, vs, 0));
         neighbor_voxels_.push_back(Eigen::Vector3d(0, -vs, 0));
         neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, vs));
         neighbor_voxels_.push_back(Eigen::Vector3d(0, 0, -vs));
+
     } else {
         for(int i = -1; i <= 1; i++) {
             for(int j = -1; j <= 1; j++) {
@@ -45,7 +47,7 @@ FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_pr
     for(int i = -2; i <=2; i++) {
         for(int j = -2; j <= 2; j++) {
             if((abs(i) + abs(j)) == 0) { continue; }
-            planar_neighbor_voxels_.push_back(Eigen::Vector3d(i*vs, j*vs, 0)); 
+            planar_neighbor_voxels_.push_back(Eigen::Vector3d(i*vs, j*vs, 0));
         }
     }
 }
@@ -71,10 +73,13 @@ void FrontierEvaluator::findFrontiers() {
 
     voxblox::BlockIndexList blocks;
     esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getAllAllocatedBlocks(&blocks);
+
     for(const auto &index : blocks) {
         const voxblox::Block<voxblox::TsdfVoxel> &block = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockByIndex(index);
+
         for(size_t linear_index = 0; linear_index < num_voxels_per_block; ++linear_index) {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
+
             if(isFrontierVoxel(coord)){
                 coord(2,0) = slice_level_;
                 hash_map_[getHash(coord)] = coord;
@@ -98,7 +103,7 @@ void FrontierEvaluator::findNeighbours(const std::string& key, Frontier& frontie
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     if(getVoxelState(voxel) != VoxelState::FREE) { return false; }
-    if((slice_level_ - voxel(2,0)) >= lower_range_ || (voxel(2,0) - slice_level_) >= upper_range_) { return false; }
+    if(!inHeightRange(voxel(2,0))) { return false; }
 
     VoxelState voxel_state;
     for(auto& neighbour : neighbor_voxels_) {
@@ -112,7 +117,7 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
 VoxelState FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
     double distance = 0.0, weight = 0.0;
     if(getVoxelDistance(point, distance) && getVoxelWeight(point, weight)) {
-        if(std::abs(distance) < voxel_size_ * surface_distance_threshold_factor_ && weight > 1e-3) {
+        if(std::abs(distance) < voxel_size_ * occupancy_distance_ && weight > 1e-3) {
             return VoxelState::OCCUPIED;
         } else if(distance >= voxel_size_) {
             return VoxelState::FREE;
@@ -124,30 +129,28 @@ VoxelState FrontierEvaluator::getVoxelState(const Eigen::Vector3d& point) {
 
 bool FrontierEvaluator::getVoxelDistance(const Eigen::Vector3d& point, double& distance) {
     voxblox::Point voxblox_point(point.x(), point.y(), point.z());
-    voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->
-    getBlockPtrByCoordinates(voxblox_point);
-    
+    voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(voxblox_point);
+
     if(block_ptr) {
         voxblox::TsdfVoxel* tsdf_voxel_ptr = block_ptr->getVoxelPtrByCoordinates(voxblox_point);
-        if(tsdf_voxel_ptr) { 
-            distance = tsdf_voxel_ptr->distance; 
+        if(tsdf_voxel_ptr) {
+            distance = tsdf_voxel_ptr->distance;
             return true;
-        } 
+        }
     }
     return false;
 }
 
 bool FrontierEvaluator::getVoxelWeight(const Eigen::Vector3d& point, double& weight) {
     voxblox::Point voxblox_point(point.x(), point.y(), point.z());
-    voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->
-    getBlockPtrByCoordinates(voxblox_point);
-    
+    voxblox::Block<voxblox::TsdfVoxel>::Ptr block_ptr = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(voxblox_point);
+
     if(block_ptr) {
         voxblox::TsdfVoxel* tsdf_voxel_ptr = block_ptr->getVoxelPtrByCoordinates(voxblox_point);
-        if(tsdf_voxel_ptr) { 
-            weight = tsdf_voxel_ptr->weight; 
+        if(tsdf_voxel_ptr) {
+            weight = tsdf_voxel_ptr->weight;
             return true;
-        } 
+        }
     }
     return false;
 }
@@ -156,7 +159,7 @@ void FrontierEvaluator::clusterFrontiers() {
     while(!hash_map_.empty()) {
         Frontier frontier;
         findNeighbours(hash_map_.begin()->first, frontier);
-        
+
         if(frontier.points.size() < min_frontier_size_) { continue; }
         frontiers_.push_back(frontier);
 
@@ -175,7 +178,7 @@ void FrontierEvaluator::convertFrontierToMsg(const FrontierEvaluator::Frontier& 
 
 void FrontierEvaluator::visualizeVoxelStates() {
     if(!visualize_) { return; }
-    // need to shorten this too
+    // TODO: expensive to do this, try to simplify
 
     size_t vps = esdf_server_.getTsdfMapPtr()->getTsdfLayerPtr()->voxels_per_side();
     size_t num_voxels_per_block = vps * vps * vps;
@@ -191,7 +194,7 @@ void FrontierEvaluator::visualizeVoxelStates() {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
             if(getVoxelWeight(coord, weight) && weight > 1e-3) {
                 switch(getVoxelState(coord)) {
-                    case VoxelState::OCCUPIED : occupied_voxels.push_back(coord); break; 
+                    case VoxelState::OCCUPIED : occupied_voxels.push_back(coord); break;
                     case VoxelState::FREE : free_voxels.push_back(coord); break;
                     case VoxelState::UNKNOWN : unknown_voxels.push_back(coord); break;
                 }
@@ -207,6 +210,7 @@ void FrontierEvaluator::visualizeVoxelStates() {
 void FrontierEvaluator::visualizeFrontierPoints() {
     if(!visualize_) { return; }
     std::vector<Eigen::Vector3d> points;
+
     for(auto& frontier : frontiers_) {
         for(auto& point : frontier.points) { points.push_back(point); }
     }

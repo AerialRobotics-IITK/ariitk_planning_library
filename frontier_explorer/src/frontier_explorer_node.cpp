@@ -12,18 +12,18 @@ int main(int argc, char** argv) {
 
     FLAGS_alsologtostderr = true;
 
-    GoalSelector evaluator(nh, nh_private);
+    GoalSelector selector(nh, nh_private);
 
     double update_rate = 10.0;
     nh_private.getParam("update_frontiers_every_n_sec", update_rate);
 
     ros::Rate loop_rate(update_rate);
-    
+
     while(ros::ok()) {
         ros::spinOnce();
-        evaluator.run();
+        selector.run();
         loop_rate.sleep();
     }
-    
+
     return 0;
 }

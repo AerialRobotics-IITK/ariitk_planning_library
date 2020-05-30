@@ -1,9 +1,10 @@
 #pragma once
 
-#include <frontier_explorer/frontier_evaluator.hpp>
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
+
 #include <ariitk_planning_msgs/Frontier.h>
+#include <frontier_explorer/frontier_evaluator.hpp>
 
 namespace ariitk::frontier_explorer {
 
@@ -11,7 +12,7 @@ class FrontierComparator {
     public:
         FrontierComparator(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
         bool operator()(ariitk_planning_msgs::Frontier f1, ariitk_planning_msgs::Frontier f2);
-    
+
     private:
         void odometryCallback(const nav_msgs::Odometry& msg) {  curr_pose_ = msg.pose.pose;  }
         static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
@@ -31,10 +32,13 @@ class FrontierComparator {
 class GoalSelector {
     public:
         GoalSelector(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
+
         void run();
-        void getActiveFrontiers();
         void scoreFrontiers(std::vector<ariitk_planning_msgs::Frontier>& frontiers);
+
+        void getActiveFrontiers();
         void getBestGoal();
+
         void visualizeActiveFrontiers();
         void visualizeActiveGoal();
 
@@ -43,16 +47,12 @@ class GoalSelector {
             return std::to_string(int(point.x / voxel_size_)) + "," + std::to_string(int(point.y / voxel_size_));
         };
 
-        bool visualize_;
-        double voxel_size_;
-        double slice_level_;
-
         FrontierEvaluator evaluator_;
         FrontierComparator comparator_;
 
         ros::NodeHandle nh_;
         ros::NodeHandle nh_private_;
-        
+
         ros::Publisher goal_pub_;
         ros::Publisher active_pub_;
 
@@ -61,6 +61,11 @@ class GoalSelector {
         ariitk_planning_msgs::Frontier active_goal_;
 
         std::unordered_map<std::string, geometry_msgs::Point> hash_map_;
+
+        bool visualize_;
+
+        double voxel_size_;
+        double slice_level_;
 };
 
 } // namespace ariitk::frontier_explorer
