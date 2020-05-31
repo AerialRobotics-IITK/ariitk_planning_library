@@ -16,11 +16,10 @@ SkeletonGlobalPlanner::SkeletonGlobalPlanner(const ros::NodeHandle& nh, const ro
     verbose_(false),
     voxblox_server_(nh_, nh_private_),
     skeleton_generator_() {
-  constraints_.setParametersFromRos(nh_private_);
-  ROS_WARN("Global Planner: %lf", constraints_.robot_radius);
-
   nh_private_.param("visualize", visualize_, visualize_);
   nh_private_.param("frame_id",  frame_id_,  frame_id_);
+
+  constraints_.setParametersFromRos(nh_private_);
 
   path_marker_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>("path", 1, true);
   sparse_graph_pub_ = nh_private_.advertise<visualization_msgs::MarkerArray>("sparse_graph", 1, true);
@@ -133,7 +132,7 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(mav_planning_msgs::PlannerSer
   astar_diag_timer.Stop();
 
   if (visualize_) {
-    marker_array.markers.push_back(mav_planning::createMarkerForPath(diagram_path, frame_id_, mav_visualization::Color::Purple(),"astar_diag", 0.1));
+    marker_array.markers.push_back(mav_planning::createMarkerForPath(diagram_path, frame_id_, mav_visualization::Color::Purple(), "astar_diag", 0.1));
   }
   ROS_INFO("Diag A* Success? %d Path length: %f Vertices: %d", success, path_length, num_vertices);
 
@@ -154,34 +153,24 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(mav_planning_msgs::PlannerSer
   }
 
   if (visualize_) { path_marker_pub_.publish(marker_array); }
-  if (verbose_) {
-    ROS_INFO_STREAM("All timings: " << std::endl << mav_trajectory_generation::timing::Timing::Print());
-  }
+  if (verbose_) { ROS_INFO_STREAM("All timings: " << std::endl << mav_trajectory_generation::timing::Timing::Print()); }
 
   if(success) status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::SUCCESS);
   else status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::FAILURE);
 }
 
-bool SkeletonGlobalPlanner::getMapDistance(
-    const Eigen::Vector3d& position, double& distance) {
+bool SkeletonGlobalPlanner::getMapDistance(const Eigen::Vector3d& position, double& distance) {
   if (!voxblox_server_.getEsdfMapPtr()) { return false; }
-  if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
-    return false;
-  }
+  if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) { return false; }
   return true;
 }
 
-bool SkeletonGlobalPlanner::getMapDistanceAndGradient(
-    const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient) {
-  if(!voxblox_server_.getEsdfMapPtr()->getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) {
-    return false;
-  }
+bool SkeletonGlobalPlanner::getMapDistanceAndGradient(const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient) {
+  if(!voxblox_server_.getEsdfMapPtr()->getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) { return false; }
   return true;
 }
 
-
-bool SkeletonGlobalPlanner::publishPathCallback(
-    std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response) {
+bool SkeletonGlobalPlanner::publishPathCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response) {
   ROS_INFO("Publishing waypoints.");
 
   geometry_msgs::PoseArray pose_array;
@@ -252,4 +241,4 @@ void SkeletonGlobalPlanner::setStatus(const PlanStatus& status) {
   }
 }
 
-}  // namespace mav_planning
+}  // namespace ariitk::global_planner

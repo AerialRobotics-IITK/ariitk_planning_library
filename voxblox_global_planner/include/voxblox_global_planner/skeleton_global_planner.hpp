@@ -3,8 +3,6 @@
 #include <memory>
 #include <string>
 #include <future>
-
-#include <ros/package.h>
 #include <ros/ros.h>
 #include <mav_msgs/conversions.h>
 #include <mav_planning_common/physical_constraints.h>
@@ -24,8 +22,6 @@ namespace ariitk::global_planner {
 class SkeletonGlobalPlanner {
  public:
   SkeletonGlobalPlanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  virtual ~SkeletonGlobalPlanner() {}
-
   void generateSparseGraph();
 
   bool plannerServiceCallback(mav_planning_msgs::PlannerServiceRequest& request, mav_planning_msgs::PlannerServiceResponse& response);
