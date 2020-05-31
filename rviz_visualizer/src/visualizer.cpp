@@ -3,8 +3,9 @@
 namespace ariitk::rviz_visualizer {
 
 void Visualizer::init(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private) {
-    nh_ = nh; nh_private_ = nh_private;
-    
+    nh_ = nh;
+    nh_private_ = nh_private;
+
     nh_private_.getParam("voxel_size", voxel_size_);
 
     color_map_.insert(std::make_pair(Visualizer::ColorType::WHITE,      Color::White()));
@@ -26,224 +27,143 @@ void Visualizer::createPublisher(const std::string& topic_name) {
     publisher_map_.insert(std::make_pair(topic_name, marker_pub));
 }
 
-void Visualizer::visualizePath(const std::string& topic_name, const std::vector<Eigen::Vector3d>& path, 
-                       const std::string& frame_id, const ColorType& color, const double& size_factor) {
-    if(path.empty()) { return; }
-
+visualization_msgs::Marker Visualizer::createMarker(const std::string& ns, const ColorType& color,
+                       const double& scale, const uint& type, const std::string& frame_id, const uint& id, const uint& action) {
     visualization_msgs::Marker marker;
+
     marker.header.frame_id = frame_id;
     marker.header.stamp = ros::Time::now();
-    marker.ns = topic_name;
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::LINE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * size_factor;
-    marker.action = visualization_msgs::Marker::ADD;
+    marker.ns = ns;
+    marker.id = id;
+    marker.type = type;
+    marker.scale.x = marker.scale.y = marker.scale.z = scale;
+    marker.action = action;
     marker.color = color_map_[color];
 
-    geometry_msgs::Point prev_center;
-    prev_center.x = path[0].x();
-    prev_center.y = path[0].y();
-    prev_center.z = path[0].z();
-
-    for(uint i = 1; i < path.size(); i++) {
-        marker.points.push_back(prev_center);
-        geometry_msgs::Point center;
-        center.x = path[i].x();
-        center.y = path[i].y();
-        center.z = path[i].z();
-        marker.points.push_back(center);
-        prev_center = center;
-    }
-    
-    visualization_msgs::MarkerArray markers;
-    markers.markers.push_back(marker);
-    publisher_map_[topic_name].publish(markers);    // protect this 
+    return marker;
 }
 
-void Visualizer::visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points, 
+geometry_msgs::Point Visualizer::convertEigenToGeometryMsg(const Eigen::Vector3d& point) {
+    geometry_msgs::Point point_msg;
+
+    point_msg.x = point.x();
+    point_msg.y = point.y();
+    point_msg.z = point.z();
+
+    return point_msg;
+}
+
+void Visualizer::publishMarkers(const std::string& topic_name, const visualization_msgs::MarkerArray& markers) {
+    if(publisher_map_.find(topic_name) == publisher_map_.end()) {
+        ROS_ERROR_STREAM("No publisher found for topic: " << topic_name);
+        return;
+    }
+
+    publisher_map_[topic_name].publish(markers);
+}
+
+void Visualizer::publishMarker(const std::string& topic_name, const visualization_msgs::Marker& marker) {
+    visualization_msgs::MarkerArray marker_array;
+    marker_array.markers.push_back(marker);
+    publishMarkers(topic_name, marker_array);
+}
+
+void Visualizer::visualizePath(const std::string& topic_name, const std::vector<Eigen::Vector3d>& path,
+                    const std::string& frame_id, const ColorType& color, const double& size_factor) {
+    if(path.empty()) { return; }
+
+    visualization_msgs::Marker path_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::LINE_LIST, frame_id);
+    geometry_msgs::Point prev_center = convertEigenToGeometryMsg(path[0]);
+
+    for(uint i = 1; i < path.size(); i++) {
+        path_marker.points.push_back(prev_center);
+        geometry_msgs::Point center = convertEigenToGeometryMsg(path[i]);
+        path_marker.points.push_back(center);
+        prev_center = center;
+    }
+
+    publishMarker(topic_name, path_marker);
+}
+
+void Visualizer::visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& points,
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
     if(points.empty()) { return; }
 
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = frame_id;
-    marker.header.stamp = ros::Time::now();
-    marker.ns = topic_name;
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * size_factor;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.color = color_map_[color];
-
-    for(auto& point : points) {
-        geometry_msgs::Point center;
-        center.x = point.x();
-        center.y = point.y();
-        center.z = point.z();
-        marker.points.push_back(center);
-    }
-    
-    visualization_msgs::MarkerArray markers;
-    markers.markers.push_back(marker);
-    publisher_map_[topic_name].publish(markers);    // protect this 
+    visualization_msgs::Marker points_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::SPHERE_LIST, frame_id);
+    for(auto& point : points) { points_marker.points.push_back(convertEigenToGeometryMsg(point)); }
+    publishMarker(topic_name, points_marker);
 }
 
-void Visualizer::visualizePaths(const std::string& topic_name, const std::vector<std::vector<Eigen::Vector3d>>& paths, 
+void Visualizer::visualizePaths(const std::string& topic_name, const std::vector<std::vector<Eigen::Vector3d>>& paths,
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
     if(paths.empty()) { return; }
 
-    visualization_msgs::MarkerArray markers;
+    visualization_msgs::MarkerArray path_markers;
     int path_seq = 0;
 
-    for(auto& path : paths) { 
-        visualization_msgs::Marker marker;
-        marker.header.frame_id = frame_id;
-        marker.header.stamp = ros::Time::now();
-        marker.ns = topic_name + "_" + std::to_string(++path_seq);
-        marker.id = path_seq;
-        marker.type = visualization_msgs::Marker::LINE_LIST;
-        marker.scale.x = marker.scale.y = marker.scale.z = voxel_size_ * size_factor;
-        marker.action = visualization_msgs::Marker::ADD;
-        marker.color = color_map_[color];
-
-        geometry_msgs::Point prev_center;
-        prev_center.x = path[0].x();
-        prev_center.y = path[0].y();
-        prev_center.z = path[0].z();
+    for(auto& path : paths) {
+        visualization_msgs::Marker path_marker = createMarker(topic_name + "_" + std::to_string(++path_seq), color, voxel_size_ * size_factor,
+                                                                visualization_msgs::Marker::LINE_LIST, frame_id, path_seq);
+        geometry_msgs::Point prev_center = convertEigenToGeometryMsg(path[0]);
 
         for(uint i = 1; i < path.size(); i++) {
-            marker.points.push_back(prev_center);
-            geometry_msgs::Point center;
-            center.x = path[i].x();
-            center.y = path[i].y();
-            center.z = path[i].z();
-            marker.points.push_back(center);
+            path_marker.points.push_back(prev_center);
+            geometry_msgs::Point center = convertEigenToGeometryMsg(path[i]);
+            path_marker.points.push_back(center);
             prev_center = center;
         }
 
-        markers.markers.push_back(marker);
+        path_markers.markers.push_back(path_marker);
     }
-    
-    publisher_map_[topic_name].publish(markers);    // protect this 
+
+    publishMarkers(topic_name, path_markers);
 }
 
-void Visualizer::visualizePoint(const std::string& topic_name, const Eigen::Vector3d& point, 
+void Visualizer::visualizePoint(const std::string& topic_name, const Eigen::Vector3d& point,
                        const std::string& frame_id, const ColorType& color, const double& size_factor) {
-    visualization_msgs::MarkerArray markers;
-    int path_seq = 0;
-
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = frame_id;
-    marker.header.stamp = ros::Time::now();
-    marker.ns = topic_name + "_" + std::to_string(++path_seq);
-    marker.id = path_seq;
-    marker.type = visualization_msgs::Marker::SPHERE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.z = voxel_size_ * size_factor;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.color = color_map_[color];
-
-    geometry_msgs::Point center;
-    center.x = point.x();
-    center.y = point.y();
-    center.z = point.z();
-    marker.points.push_back(center);
-
-    markers.markers.push_back(marker);
-    
-    publisher_map_[topic_name].publish(markers);    // protect this 
+    visualization_msgs::Marker point_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::SPHERE_LIST, frame_id);
+    point_marker.points.push_back(convertEigenToGeometryMsg(point));
+    publishMarker(topic_name, point_marker);
 }
 
 void Visualizer::visualizeGraph(const std::string& topic_name, const Graph& graph,
                         const std::string& frame_id, const ColorType& vertex_color, const ColorType& edge_color, const double& size_factor) {
     if(graph.empty()) { return; }
-    visualization_msgs::MarkerArray markers;
-    
-    visualization_msgs::Marker vertex_marker;
-    vertex_marker.header.frame_id = frame_id;
-    vertex_marker.header.stamp = ros::Time::now();
-    vertex_marker.ns = "vertices";
-    vertex_marker.id = 0;
-    vertex_marker.type = visualization_msgs::Marker::CUBE_LIST;
-    vertex_marker.scale.x = vertex_marker.scale.y = vertex_marker.scale.z = voxel_size_ * 0.1;
-    vertex_marker.action = visualization_msgs::Marker::ADD;
-    vertex_marker.color = color_map_[vertex_color];
+    visualization_msgs::MarkerArray graph_markers;
 
+    visualization_msgs::Marker vertex_marker = createMarker("vertices", vertex_color, voxel_size_ * size_factor, visualization_msgs::Marker::CUBE_LIST, frame_id);
+    for(auto& node : graph) { vertex_marker.points.push_back(convertEigenToGeometryMsg(node->getPosition())); }
+    graph_markers.markers.push_back(vertex_marker);
+
+    visualization_msgs::Marker edge_marker = createMarker("edges", edge_color, 0.05 * voxel_size_ * size_factor, visualization_msgs::Marker::LINE_LIST, frame_id);
     for(auto& node : graph) {
-        geometry_msgs::Point point;
-        Eigen::Vector3d pos = node->getPosition();
-        point.x = pos.x();
-        point.y = pos.y();
-        point.z = pos.z();
-        vertex_marker.points.push_back(point);
-    }
-    markers.markers.push_back(vertex_marker);
-
-    visualization_msgs::Marker edge_marker;
-    edge_marker.header.frame_id = frame_id;
-    edge_marker.header.stamp = ros::Time::now();
-    edge_marker.ns = "edges";
-    edge_marker.id = 0;
-    edge_marker.type = visualization_msgs::Marker::LINE_LIST;
-    edge_marker.scale.x = edge_marker.scale.y = edge_marker.scale.z = 0.005;
-    edge_marker.action = visualization_msgs::Marker::ADD;
-    edge_marker.color = color_map_[edge_color];
-
-    for(auto& node : graph) {
-        geometry_msgs::Point start_point;
-        Eigen::Vector3d start_pos = node->getPosition();
-
-        start_point.x = start_pos.x();
-        start_point.y = start_pos.y();
-        start_point.z = start_pos.z();
+        geometry_msgs::Point start_point = convertEigenToGeometryMsg(node->getPosition());
 
         for(auto& neigh : node->getNeighbours()) {
-            geometry_msgs::Point end_point;
-            Eigen::Vector3d end_pos = neigh->getPosition();
-
-            end_point.x = end_pos.x();
-            end_point.y = end_pos.y();
-            end_point.z = end_pos.z();
-
             edge_marker.points.push_back(start_point);
-            edge_marker.points.push_back(end_point);
+            edge_marker.points.push_back(convertEigenToGeometryMsg(neigh->getPosition()));
         }
     }
-    markers.markers.push_back(edge_marker);
+    graph_markers.markers.push_back(edge_marker);
 
-    publisher_map_[topic_name].publish(markers);
+    publishMarkers(topic_name, graph_markers);
 }
 
 void Visualizer::visualizeTrajectory(const std::string& topic_name, const mav_msgs::EigenTrajectoryPointVector& trajectory,
                         const std::string& frame_id, const ColorType& color, const double& size_factor) {
     if(trajectory.empty()) { return; }
 
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = frame_id;
-    marker.header.stamp = ros::Time::now();
-    marker.ns = topic_name;
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::LINE_LIST;
-    marker.scale.x = marker.scale.y = marker.scale.y = voxel_size_ * size_factor;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.color = color_map_[color];
-
-    geometry_msgs::Point prev_center;
-    prev_center.x = trajectory[0].position_W.x();
-    prev_center.y = trajectory[0].position_W.y();
-    prev_center.z = trajectory[0].position_W.z();
+    visualization_msgs::Marker traj_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::LINE_LIST, frame_id);
+    geometry_msgs::Point prev_center = convertEigenToGeometryMsg(trajectory[0].position_W);
 
     for(uint i = 1; i < trajectory.size(); i++) {
-        marker.points.push_back(prev_center);
-        geometry_msgs::Point center;
-        center.x = trajectory[i].position_W.x();
-        center.y = trajectory[i].position_W.y();
-        center.z = trajectory[i].position_W.z();
-        marker.points.push_back(center);
+        traj_marker.points.push_back(prev_center);
+        geometry_msgs::Point center = convertEigenToGeometryMsg(trajectory[i].position_W);;
+        traj_marker.points.push_back(center);
         prev_center = center;
     }
-    
-    visualization_msgs::MarkerArray markers;
-    markers.markers.push_back(marker);
-    publisher_map_[topic_name].publish(markers);    // protect this
+
+    publishMarker(topic_name, traj_marker);
 }
 
 } // namespace ariitk::rviz_visualizer
