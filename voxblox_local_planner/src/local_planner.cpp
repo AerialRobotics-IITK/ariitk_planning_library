@@ -8,10 +8,10 @@ namespace ariitk::local_planner {
 LocalPlanner::LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     : pathfinder_(nh, nh_private)
     , const_yaw_(0) {
-    nh_private.getParam("visualize", visualize_);
+    nh_private.getParam("visualize",    visualize_);
     nh_private.getParam("robot_radius", robot_radius_);
-    nh_private.getParam("voxel_size", voxel_size_);
-    nh_private.getParam("sampling_dt", sampling_dt_);
+    nh_private.getParam("voxel_size",   voxel_size_);
+    nh_private.getParam("sampling_dt",  sampling_dt_);
 
     smoother_.setParametersFromRos(nh_private);
     smoother_.setMinCollisionCheckResolution(voxel_size_);

@@ -35,8 +35,8 @@ PathFinder::PathFinder(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     , density_factor_(1.0)
     , inflate_radius_(false)
     , inflate_factor_(1.0) {
-    nh_private.getParam("robot_radius", robot_radius_);
-    nh_private.getParam("visualize", visualize_);
+    nh_private.getParam("robot_radius",   robot_radius_);
+    nh_private.getParam("visualize",      visualize_);
     nh_private.getParam("num_neighbours", num_neighbours_);
 
     voxel_size_ = double(server_.getEsdfMapPtr()->voxel_size());
