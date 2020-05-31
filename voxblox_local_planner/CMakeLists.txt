@@ -4,6 +4,7 @@ project(voxblox_local_planner)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
+find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
 
 add_definitions(-std=c++17)
@@ -15,7 +16,7 @@ cs_add_library(${PROJECT_NAME}
   src/local_planner.cpp
   src/path_finder.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES} ${Eigen3_LIBRARIES})
 
 ############
 # BINARIES #

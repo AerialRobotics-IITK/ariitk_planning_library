@@ -19,39 +19,36 @@ typedef mav_msgs::EigenTrajectoryPointVector Trajectory;
 
 class LocalPlanner {
     public:
+        enum class PlanStatus{FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN};
+
         LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
         void setConstantYaw(const double& yaw) { const_yaw_ = yaw; }
-        enum class PlanStatus{FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN};
-    
+
     private:
         enum class YawPolicy{ POINT_FACING, ANTICIPATE_VELOCITY, FOLLOW_VELOCITY, CONSTANT };
 
         static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
             return std::sqrt(std::pow(p1.x-p2.x,2) + std::pow(p1.y-p2.y, 2) + std::pow(p1.z-p2.z, 2));
         }
+        geometry_msgs::Point convertEigenToGeometryMsg(const Eigen::Vector3d& point);
 
-        static inline double norm(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2) {
-            return std::sqrt(std::pow(p1.x()-p2.x(),2) + std::pow(p1.y()-p2.y(), 2) + std::pow(p1.z()-p2.z(), 2));
-        }
-
-        static inline double norm(const geometry_msgs::Point& p1, const Eigen::Vector3d& p2) {
-            return std::sqrt(std::pow(p1.x-p2.x(),2) + std::pow(p1.y-p2.y(), 2) + std::pow(p1.z-p2.z(), 2));
-        }
-        
         void odometryCallback(const nav_msgs::Odometry& msg){ odometry_ = msg; }
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
-        
-        void applyYawToTrajectory(Trajectory& trajectory, const YawPolicy& policy = YawPolicy::ANTICIPATE_VELOCITY);
-        bool checkForReplan(const Trajectory& trajectory);
+
         Trajectory plan(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void executePlan(const Trajectory& trajectory);
-        void generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
+        bool checkForReplan(const Trajectory& trajectory);
+
         Trajectory generateTrajectoryThroughWaypoints(const Path& waypoints);
+        void applyYawToTrajectory(Trajectory& trajectory, const YawPolicy& policy = YawPolicy::ANTICIPATE_VELOCITY);
+        void generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
         void convertPathToTrajectory(const Path& path, Trajectory& trajectory);
-        inline double getMapDistanceAndGradient(const Eigen::Vector3d& point, Eigen::Vector3d* gradient) const {
+
+        inline double getMapDistanceAndGradient(const Eigen::Vector3d& point, Eigen::Vector3d* gradient) {
             return pathfinder_.getMapDistanceAndGradient(point, gradient);
         }
+
         void clear();
         void setStatus(const PlanStatus& status);
 
