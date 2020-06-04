@@ -81,16 +81,8 @@ class PathVisualizer {
         enum class ColorType{WHITE, BLACK, GRAY, RED, GREEN, BLUE, YELLOW, ORANGE, PURPLE, CHARTREUSE, TEAL, PINK};
         void visualizePath(const std::string& topic_name, const std::vector<Eigen::Vector3d>& path, 
                        const std::string& frame_id = "world", const ColorType& color = ColorType::PINK, const double& size_factor = 0.5);
-        void visualizePaths(const std::string& topic_name, const std::vector<std::vector<Eigen::Vector3d>>& paths, 
-                       const std::string& frame_id = "world", const ColorType& color = ColorType::PINK, const double& size_factor = 0.5);
         void visualizeGraph(const std::string& topic_name, const Graph& graph, const std::string& frame_id = "world",
                         const ColorType& vertex_color = ColorType::ORANGE, const ColorType& edge_color = ColorType::BLUE, const double& size_factor = 0.5);
-        void visualizePoint(const std::string& topic_name, const Eigen::Vector3d& point, 
-                       const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
-        void visualizePoints(const std::string& topic_name, const std::vector<Eigen::Vector3d>& point, 
-                       const std::string& frame_id = "world", const ColorType& color = ColorType::RED, const double& size_factor = 1.0);
-        void visualizeTrajectory(const std::string& topic_name, const mav_msgs::EigenTrajectoryPointVector& trajectory, 
-                       const std::string& frame_id = "world", const ColorType& color = ColorType::BLACK, const double& size_factor = 1.0);
                        
     private:
         ros::NodeHandle nh_;
@@ -118,9 +110,6 @@ class AStarPlanner {
         void findPath(const Eigen::Vector3d& start_pose, const Eigen::Vector3d& goal_pose);
         void searchPath(const uint& start_index, const uint& end_index);
         void esdfSliceCallback(pcl::PointCloud<pcl::PointXYZI> pointcloud);
-        // void shortenPath();
-        // void findMaximalIndices(const uint& start, const uint& end, std::vector<bool>* map);
-        // bool isLineInCollision(const Eigen::Vector3d& start, const Eigen::Vector3d& end);
 
         voxblox::EsdfServer voxblox_server_;
         ros::NodeHandle nh_;

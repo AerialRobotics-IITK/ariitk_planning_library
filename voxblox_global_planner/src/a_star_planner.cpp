@@ -71,23 +71,7 @@ void AStarPlanner::findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector
     }
 
     searchPath(0, 1);
-    // if(raw_path_.empty()) { 
-    //     ROS_WARN("Plan failed! Adding more nodes!");
-    //     increaseSamplingDensity(4.0);
-    //     expandSamplingRegion(2.0);
-    //     createGraph(start_pt, end_pt);
-    //     visualizer_.visualizeGraph("graph", graph_);
-    //     searchPath(0, 1);
-    // }
 
-    // visualizer_.visualizePath("path", path_, "world", PathVisualizer::ColorType::TEAL, 0.05);
-
-    // shortenPath();
-    // if(!short_path_.empty()){
-    //     visualizer_.visualizePath("short_path", short_path_, "world", PathVisualizer::ColorType::GREEN, 0.1);
-    //     path_ = short_path_;
-    // }
-    // else { path_ = raw_path_; }
 }
 
 void AStarPlanner::searchPath(const uint& start_index, const uint& end_index) {
@@ -155,7 +139,6 @@ void AStarPlanner::createGraph(const Eigen::Vector3d& start, const Eigen::Vector
 
   uint i=2;
 
-  // graph_.clear();
   for(auto& point : pointcloud_.points) {
     if(point.intensity > robot_radius_) {
       graph_.push_back(Node(new GraphNode(point,i++)));
