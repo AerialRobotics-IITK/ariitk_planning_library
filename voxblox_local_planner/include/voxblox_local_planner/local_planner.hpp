@@ -1,17 +1,17 @@
 #pragma once
 
-#include <future>
-#include <ros/ros.h>
-#include <geometry_msgs/PoseArray.h>
-#include <nav_msgs/Odometry.h>
-#include <voxblox_ros/esdf_server.h>
-#include <tf/tf.h>
-#include <mav_path_smoothing/loco_smoother.h>
-#include <mav_msgs/eigen_mav_msgs.h>
 #include <Eigen/Eigen>
+#include <future>
+#include <geometry_msgs/PoseArray.h>
+#include <mav_msgs/eigen_mav_msgs.h>
+#include <mav_path_smoothing/loco_smoother.h>
+#include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
+#include <tf/tf.h>
+#include <voxblox_ros/esdf_server.h>
 
-#include <voxblox_local_planner/path_finder.hpp>
 #include <mav_trajectory_generation/trajectory_sampling.h>
+#include <voxblox_local_planner/path_finder.hpp>
 
 namespace ariitk::local_planner {
 
@@ -19,20 +19,20 @@ typedef mav_msgs::EigenTrajectoryPointVector Trajectory;
 
 class LocalPlanner {
     public:
-        enum class PlanStatus{FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN};
+        enum class PlanStatus { FAILURE, IN_PROGRESS, SUCCESS, IDLE, UNKNOWN };
 
         LocalPlanner(ros::NodeHandle& nh, ros::NodeHandle& nh_private);
         void setConstantYaw(const double& yaw) { const_yaw_ = yaw; }
 
     private:
-        enum class YawPolicy{ POINT_FACING, ANTICIPATE_VELOCITY, FOLLOW_VELOCITY, CONSTANT };
+        enum class YawPolicy { POINT_FACING, ANTICIPATE_VELOCITY, FOLLOW_VELOCITY, CONSTANT };
 
         static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
-            return std::sqrt(std::pow(p1.x-p2.x,2) + std::pow(p1.y-p2.y, 2) + std::pow(p1.z-p2.z, 2));
+            return std::sqrt(std::pow(p1.x - p2.x, 2) + std::pow(p1.y - p2.y, 2) + std::pow(p1.z - p2.z, 2));
         }
         geometry_msgs::Point convertEigenToGeometryMsg(const Eigen::Vector3d& point);
 
-        void odometryCallback(const nav_msgs::Odometry& msg){ odometry_ = msg; }
+        void odometryCallback(const nav_msgs::Odometry& msg) { odometry_ = msg; }
         void waypointCallback(const geometry_msgs::PoseStamped& msg);
         void waypointListCallback(const geometry_msgs::PoseArray& msg);
 
@@ -83,4 +83,4 @@ class LocalPlanner {
         std::future<void> status_thread_;
 };
 
-} // namespace ariitk::local_planner
+}  // namespace ariitk::local_planner

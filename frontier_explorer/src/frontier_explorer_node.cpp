@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
 
     ros::Rate loop_rate(update_rate);
 
-    while(ros::ok()) {
+    while (ros::ok()) {
         ros::spinOnce();
         selector.run();
         loop_rate.sleep();

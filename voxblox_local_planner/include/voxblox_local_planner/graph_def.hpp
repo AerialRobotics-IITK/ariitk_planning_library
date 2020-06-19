@@ -9,12 +9,9 @@ namespace ariitk::local_planner {
 
 class GraphNode {
     public:
-        enum class NodeState{NEW, OPEN, CLOSE};
+        enum class NodeState { NEW, OPEN, CLOSE };
 
-        GraphNode(const Eigen::Vector3d& pos, const uint& id)
-            : pos_(pos)
-            , id_(id)
-            , state_(NodeState::NEW) {}
+        GraphNode(const Eigen::Vector3d& pos, const uint& id) : pos_(pos), id_(id), state_(NodeState::NEW) {}
         typedef std::shared_ptr<GraphNode> Ptr;
 
         uint getID() { return id_; }
@@ -26,8 +23,8 @@ class GraphNode {
         void addNeighbour(const GraphNode::Ptr& node) { neighbours_.push_back(node); }
 
         void deleteNeighbour(const uint& id) {
-            for(auto it = neighbours_.begin(); it != neighbours_.end(); it++) {
-                if(id == (*it)->getID()) {
+            for (auto it = neighbours_.begin(); it != neighbours_.end(); it++) {
+                if (id == (*it)->getID()) {
                     neighbours_.erase(it);
                     return;
                 }
@@ -48,4 +45,4 @@ typedef boost::geometry::model::point<double, 3, boost::geometry::cs::cartesian>
 typedef std::pair<Point, unsigned> Value;
 typedef boost::geometry::index::rtree<Value, boost::geometry::index::quadratic<16>> RTree;
 
-} // namespace ariitk::local_planner
+}  // namespace ariitk::local_planner

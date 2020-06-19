@@ -14,9 +14,9 @@ class FrontierComparator {
         bool operator()(ariitk_planning_msgs::Frontier f1, ariitk_planning_msgs::Frontier f2);
 
     private:
-        void odometryCallback(const nav_msgs::Odometry& msg) {  curr_pose_ = msg.pose.pose;  }
+        void odometryCallback(const nav_msgs::Odometry& msg) { curr_pose_ = msg.pose.pose; }
         static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
-            return sqrt(pow((p1.x - p2.x),2) + pow((p1.y - p2.y),2) + pow((p1.z - p2.z), 2));
+            return sqrt(pow((p1.x - p2.x), 2) + pow((p1.y - p2.y), 2) + pow((p1.z - p2.z), 2));
         }
 
         ros::NodeHandle nh_;
@@ -26,7 +26,7 @@ class FrontierComparator {
 
         double clear_radius_;
         double min_size_;
-        geometry_msgs::Pose curr_pose_;
+        geometry_msgs::Pose mav_pose_;
 };
 
 class GoalSelector {
@@ -68,4 +68,4 @@ class GoalSelector {
         double slice_level_;
 };
 
-} // namespace ariitk::frontier_explorer
+}  // namespace ariitk::frontier_explorer

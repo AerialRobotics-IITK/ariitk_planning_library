@@ -1,10 +1,10 @@
 #pragma once
 
+#include <Eigen/Core>
 #include <random>
 #include <ros/ros.h>
-#include <Eigen/Core>
-#include <voxblox_ros/esdf_server.h>
 #include <voxblox/core/tsdf_map.h>
+#include <voxblox_ros/esdf_server.h>
 
 #include <rviz_visualizer/visualizer.hpp>
 #include <voxblox_local_planner/graph_def.hpp>
@@ -18,7 +18,7 @@ typedef ariitk::rviz_visualizer::Visualizer Visualizer;
 class PointSampler {
     public:
         PointSampler() {
-            engine_ = std::default_random_engine(rd_()) ;
+            engine_ = std::default_random_engine(rd_());
             dist_ = std::uniform_real_distribution<double>(-1.0, 1.0);
         }
 
@@ -45,9 +45,7 @@ class PathFinder {
         void findPath(const Eigen::Vector3d& start_pt, const Eigen::Vector3d& end_pt);
         Path getPath() { return path_; };
 
-        inline bool getMapDistance(const Eigen::Vector3d& point, double& distance) {
-            return server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance);
-        }
+        inline bool getMapDistance(const Eigen::Vector3d& point, double& distance) { return server_.getEsdfMapPtr()->getDistanceAtPosition(point, &distance); }
         double getMapDistanceAndGradient(const Eigen::Vector3d& position, Eigen::Vector3d* gradient);
 
         void expandSamplingRegion(const double& size);
@@ -95,4 +93,4 @@ class PathFinder {
         Visualizer visualizer_;
 };
 
-} // namespace ariitk::local_planner
+}  // namespace ariitk::local_planner

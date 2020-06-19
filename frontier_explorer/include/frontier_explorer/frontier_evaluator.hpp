@@ -1,18 +1,18 @@
 #pragma once
 
-#include <voxblox_ros/esdf_server.h>
-#include <voxblox/core/tsdf_map.h>
-#include <mav_planning_common/physical_constraints.h>
 #include <Eigen/Core>
+#include <mav_planning_common/physical_constraints.h>
+#include <voxblox/core/tsdf_map.h>
+#include <voxblox_ros/esdf_server.h>
 
-#include <rviz_visualizer/visualizer.hpp>
 #include <ariitk_planning_msgs/Frontiers.h>
+#include <rviz_visualizer/visualizer.hpp>
 
 namespace ariitk::frontier_explorer {
 
 typedef ariitk::rviz_visualizer::Visualizer Visualizer;
 
-enum class VoxelState{OCCUPIED, FREE, UNKNOWN};
+enum class VoxelState { OCCUPIED, FREE, UNKNOWN };
 
 class FrontierEvaluator {
     public:
@@ -31,7 +31,7 @@ class FrontierEvaluator {
         void visualizeFrontierCenters();
 
     protected:
-        struct Frontier{
+        struct Frontier {
             std::vector<Eigen::Vector3d> points;
             Eigen::Vector3d center;
         };
@@ -39,9 +39,7 @@ class FrontierEvaluator {
         inline std::string getHash(const Eigen::Vector3d& coord) {
             return std::to_string(int(coord.x() / voxel_size_)) + "," + std::to_string(int(coord.y() / voxel_size_));
         }
-        inline bool inHeightRange(const double& height) {
-            return ((slice_level_ - height) < lower_range_) && ((height - slice_level_) < upper_range_);
-        }
+        inline bool inHeightRange(const double& height) { return ((slice_level_ - height) < lower_range_) && ((height - slice_level_) < upper_range_); }
 
         bool isFrontierVoxel(const Eigen::Vector3d& voxel);
         void findNeighbours(const std::string& key, Frontier& frontier);
@@ -79,4 +77,4 @@ class FrontierEvaluator {
         std::string frame_id_;
 };
 
-} // namespace ariitk::frontier_explorer
+}  // namespace ariitk::frontier_explorer
