@@ -16,10 +16,10 @@ cs_add_library(${PROJECT_NAME}
 ############
 # BINARIES #
 ############
-cs_add_executable(skeleton_global_planner_node
-  src/skeleton_global_planner_node.cpp
+cs_add_executable(${PROJECT_NAME}_node
+  src/${PROJECT_NAME}_node.cpp
 )
-target_link_libraries(skeleton_global_planner_node ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #

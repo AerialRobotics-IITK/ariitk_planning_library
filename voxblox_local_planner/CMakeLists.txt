@@ -21,10 +21,10 @@ target_link_libraries(${PROJECT_NAME} ${BOOST_LIBRARIES} ${Eigen3_LIBRARIES})
 ############
 # BINARIES #
 ############
-cs_add_executable(local_planner_node
-  src/local_planner_node.cpp
+cs_add_executable(${PROJECT_NAME}_node
+  src/${PROJECT_NAME}_node.cpp
 )
-target_link_libraries(local_planner_node ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 
 ##########
 # EXPORT #

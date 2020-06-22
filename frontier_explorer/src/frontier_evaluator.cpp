@@ -4,6 +4,7 @@ namespace ariitk::frontier_explorer {
 
 FrontierEvaluator::FrontierEvaluator(ros::NodeHandle& nh, ros::NodeHandle& nh_private)
     : esdf_server_(nh, nh_private) {
+    // TODO: create a config struct for param initialization
     nh_private.getParam("accurate_frontiers", accurate_frontiers_);
     nh_private.getParam("checking_distance", checking_dist_);
     nh_private.getParam("visualize", visualize_);
@@ -194,9 +195,15 @@ void FrontierEvaluator::visualizeVoxelStates() {
             Eigen::Vector3d coord = block.computeCoordinatesFromLinearIndex(linear_index).cast<double>();
             if (getVoxelWeight(coord, weight) && weight > 1e-3) {
                 switch (getVoxelState(coord)) {
-                    case VoxelState::OCCUPIED: occupied_voxels.push_back(coord); break;
-                    case VoxelState::FREE: free_voxels.push_back(coord); break;
-                    case VoxelState::UNKNOWN: unknown_voxels.push_back(coord); break;
+                    case VoxelState::OCCUPIED:
+                        occupied_voxels.push_back(coord);
+                        break;
+                    case VoxelState::FREE:
+                        free_voxels.push_back(coord);
+                        break;
+                    case VoxelState::UNKNOWN:
+                        unknown_voxels.push_back(coord);
+                        break;
                 }
             }
         }

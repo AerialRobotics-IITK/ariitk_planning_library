@@ -83,9 +83,9 @@ void GoalSelector::visualizeActiveFrontiers() {
     active_pub_.publish(markers);
 }
 
-bool FrontierComparator::operator()(ariitk_planning_msgs::Frontier f1, ariitk_planning_msgs::Frontier f2) {
-    double cost1 = norm(f1.center, mav_pose_.position);
-    double cost2 = norm(f2.center, mav_pose_.position);
+bool FrontierComparator::operator()(const ariitk_planning_msgs::Frontier f1, const ariitk_planning_msgs::Frontier f2) {
+    double cost1 = getDistance(f1.center, mav_pose_.position);
+    double cost2 = getDistance(f2.center, mav_pose_.position);
 
     double gain1 = std::pow((f1.num_points / min_size_), 2.0);
     double gain2 = std::pow((f2.num_points / min_size_), 2.0);

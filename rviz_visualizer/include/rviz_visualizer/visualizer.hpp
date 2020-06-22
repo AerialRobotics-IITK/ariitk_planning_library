@@ -22,6 +22,7 @@ class Color : public std_msgs::ColorRGBA {
             a = alpha;
         }
 
+        // FIXME: better way to do this?
         static const Color White() { return Color(1.0, 1.0, 1.0); }
         static const Color Black() { return Color(0.0, 0.0, 0.0); }
         static const Color Gray() { return Color(0.5, 0.5, 0.5); }
@@ -36,6 +37,7 @@ class Color : public std_msgs::ColorRGBA {
         static const Color Pink() { return Color(1.0, 0.0, 0.5); }
 };
 
+// FIXME: maybe use an extern to get this class from the local planner?
 class GraphNode {
     public:
         enum class NodeState { NEW, OPEN, CLOSE };
@@ -80,6 +82,7 @@ class Visualizer {
 
         enum class ColorType { WHITE, BLACK, GRAY, RED, GREEN, BLUE, YELLOW, ORANGE, PURPLE, CHARTREUSE, TEAL, PINK };
 
+        // TODO: Create a union to pass as function argument/template
         void visualizePath(const std::string& topic_name,
             const std::vector<Eigen::Vector3d>& path,
             const std::string& frame_id = "world",

@@ -11,11 +11,11 @@ namespace ariitk::frontier_explorer {
 class FrontierComparator {
     public:
         FrontierComparator(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-        bool operator()(ariitk_planning_msgs::Frontier f1, ariitk_planning_msgs::Frontier f2);
+        bool operator()(const ariitk_planning_msgs::Frontier f1, const  ariitk_planning_msgs::Frontier f2);
 
     private:
         void odometryCallback(const nav_msgs::Odometry& msg) { mav_pose_ = msg.pose.pose; }
-        static inline double norm(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
+        static inline double getDistance(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2) {
             return sqrt(pow((p1.x - p2.x), 2) + pow((p1.y - p2.y), 2) + pow((p1.z - p2.z), 2));
         }
 
