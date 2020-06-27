@@ -65,7 +65,9 @@ void SkeletonGlobalPlanner::generateSparseGraph() {
         sparse_graph_pub_.publish(marker_array);
     }
 
-    if (verbose_) { ROS_INFO_STREAM("[GP] Generation timings: " << std::endl << voxblox::timing::Timing::Print()); }
+    if (verbose_) {
+        ROS_INFO_STREAM("[GP] Generation timings: " << std::endl << voxblox::timing::Timing::Print());
+    }
 }
 
 bool SkeletonGlobalPlanner::plannerServiceCallback(mav_planning_msgs::PlannerServiceRequest& request, mav_planning_msgs::PlannerServiceResponse& response) {
@@ -152,8 +154,12 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(mav_planning_msgs::PlannerSer
         last_waypoints_ = short_path;
     }
 
-    if (visualize_) { path_marker_pub_.publish(marker_array); }
-    if (verbose_) { ROS_INFO_STREAM("All timings: " << std::endl << mav_trajectory_generation::timing::Timing::Print()); }
+    if (visualize_) {
+        path_marker_pub_.publish(marker_array);
+    }
+    if (verbose_) {
+        ROS_INFO_STREAM("All timings: " << std::endl << mav_trajectory_generation::timing::Timing::Print());
+    }
 
     if (success)
         status_thread_ = std::async(std::launch::async, &SkeletonGlobalPlanner::setStatus, this, PlanStatus::SUCCESS);
@@ -162,13 +168,19 @@ bool SkeletonGlobalPlanner::plannerServiceCallback(mav_planning_msgs::PlannerSer
 }
 
 bool SkeletonGlobalPlanner::getMapDistance(const Eigen::Vector3d& position, double& distance) {
-    if (!voxblox_server_.getEsdfMapPtr()) { return false; }
-    if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) { return false; }
+    if (!voxblox_server_.getEsdfMapPtr()) {
+        return false;
+    }
+    if (!voxblox_server_.getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
+        return false;
+    }
     return true;
 }
 
 bool SkeletonGlobalPlanner::getMapDistanceAndGradient(const Eigen::Vector3d& position, double& distance, Eigen::Vector3d& gradient) {
-    if (!voxblox_server_.getEsdfMapPtr()->getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) { return false; }
+    if (!voxblox_server_.getEsdfMapPtr()->getDistanceAndGradientAtPosition(position, false, &distance, &gradient)) {
+        return false;
+    }
     return true;
 }
 
@@ -227,7 +239,9 @@ bool SkeletonGlobalPlanner::getNearestFreeSpaceToPoint(const Eigen::Vector3d& po
 
 void SkeletonGlobalPlanner::setStatus(const PlanStatus& status) {
     status_ = status;
-    if (status == PlanStatus::IDLE) { return; }
+    if (status == PlanStatus::IDLE) {
+        return;
+    }
     ros::Rate loop_rate(50);
     ros::Time start_time = ros::Time::now();
 

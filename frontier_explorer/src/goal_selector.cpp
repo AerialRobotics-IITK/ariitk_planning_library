@@ -76,7 +76,9 @@ void GoalSelector::visualizeActiveFrontiers() {
     marker.color.a = 1.0;
     marker.color.g = 0.0;
 
-    for (auto& point : active_frontiers) { marker.points.push_back(point.center); }
+    for (auto& point : active_frontiers) {
+        marker.points.push_back(point.center);
+    }
 
     visualization_msgs::MarkerArray markers;
     markers.markers.push_back(marker);
@@ -99,7 +101,9 @@ bool FrontierComparator::operator()(const ariitk_planning_msgs::Frontier f1, con
 }
 
 void GoalSelector::scoreFrontiers(std::vector<ariitk_planning_msgs::Frontier>& frontiers) {
-    if (frontiers.empty()) { return; }
+    if (frontiers.empty()) {
+        return;
+    }
     std::sort(frontiers.begin(), frontiers.end(), comparator_);
 }
 

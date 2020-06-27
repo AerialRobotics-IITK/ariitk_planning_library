@@ -87,7 +87,9 @@ bool LocalPlanner::checkForReplan(const Trajectory& segment) {
     for (auto& point : segment) {
         if (pathfinder_.getMapDistance(point.position_W, distance) && distance < voxel_size_) {
             occupied++;
-            if (visualize_) { occ_points.push_back(point.position_W); }
+            if (visualize_) {
+                occ_points.push_back(point.position_W);
+            }
         } else if (visualize_) {
             free_points.push_back(point.position_W);
         }
@@ -199,7 +201,9 @@ void LocalPlanner::generateTrajectoryBetweenTwoPoints(const Eigen::Vector3d& sta
     }
 
     applyYawToTrajectory(trajectory_);
-    if (visualize_) { visualizer_.visualizeTrajectory("trajectory", trajectory_, "world", Visualizer::ColorType::BLACK, 0.2); }
+    if (visualize_) {
+        visualizer_.visualizeTrajectory("trajectory", trajectory_, "world", Visualizer::ColorType::BLACK, 0.2);
+    }
 }
 
 Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoints) {
@@ -215,7 +219,9 @@ Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoint
     if (pathfinder_.getPathLength(waypoints) < 0.05) {
         traj = eigen_waypts;
         applyYawToTrajectory(traj);
-        if (visualize_) { visualizer_.visualizeTrajectory("trajectory", traj, "world", Visualizer::ColorType::BLACK, 0.2); }
+        if (visualize_) {
+            visualizer_.visualizeTrajectory("trajectory", traj, "world", Visualizer::ColorType::BLACK, 0.2);
+        }
         return traj;
     }
 
@@ -231,12 +237,16 @@ Trajectory LocalPlanner::generateTrajectoryThroughWaypoints(const Path& waypoint
     }
 
     applyYawToTrajectory(traj);
-    if (visualize_) { visualizer_.visualizeTrajectory("trajectory", traj, "world", Visualizer::ColorType::BLACK, 0.2); }
+    if (visualize_) {
+        visualizer_.visualizeTrajectory("trajectory", traj, "world", Visualizer::ColorType::BLACK, 0.2);
+    }
     return traj;
 }
 
 void LocalPlanner::applyYawToTrajectory(Trajectory& trajectory, const YawPolicy& policy) {
-    if (trajectory.size() < 2) { return; }
+    if (trajectory.size() < 2) {
+        return;
+    }
     double last_yaw = trajectory.front().getYaw();
 
     if (policy == YawPolicy::POINT_FACING) {
@@ -268,7 +278,9 @@ void LocalPlanner::applyYawToTrajectory(Trajectory& trajectory, const YawPolicy&
                     velocity_xy.z() = 0;
                     j++;
                 }
-                if (velocity_xy.norm() > minVelocityNorm) { desired_yaw = atan2(velocity_xy.y(), velocity_xy.x()); }
+                if (velocity_xy.norm() > minVelocityNorm) {
+                    desired_yaw = atan2(velocity_xy.y(), velocity_xy.x());
+                }
                 trajectory[i].setFromYaw(desired_yaw);
                 last_yaw = desired_yaw;
             }
@@ -289,14 +301,18 @@ void LocalPlanner::applyYawToTrajectory(Trajectory& trajectory, const YawPolicy&
                     velocity_xy = trajectory[j - 1].velocity_W;
                     velocity_xy.z() = 0;
                 }
-                if (velocity_xy.norm() > minVelocityNorm) { desired_yaw = atan2(velocity_xy.y(), velocity_xy.x()); }
+                if (velocity_xy.norm() > minVelocityNorm) {
+                    desired_yaw = atan2(velocity_xy.y(), velocity_xy.x());
+                }
                 trajectory[i].setFromYaw(desired_yaw);
                 last_yaw = desired_yaw;
             }
         }
         trajectory[0].setFromYaw(initial_yaw);
     } else if (policy == YawPolicy::CONSTANT) {
-        for (auto i = 0; i < trajectory.size(); i++) { trajectory[i].setFromYaw(const_yaw_); }
+        for (auto i = 0; i < trajectory.size(); i++) {
+            trajectory[i].setFromYaw(const_yaw_);
+        }
     }
 }
 
@@ -316,7 +332,9 @@ void LocalPlanner::clear() {
 
 void LocalPlanner::setStatus(const PlanStatus& status) {
     status_ = status;
-    if (status == PlanStatus::IDLE) { return; }
+    if (status == PlanStatus::IDLE) {
+        return;
+    }
     ros::Rate loop_rate(50);
     ros::Time start_time = ros::Time::now();
 

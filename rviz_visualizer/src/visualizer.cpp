@@ -78,7 +78,9 @@ void Visualizer::visualizePath(const std::string& topic_name,
     const std::string& frame_id,
     const ColorType& color,
     const double& size_factor) {
-    if (path.empty()) { return; }
+    if (path.empty()) {
+        return;
+    }
 
     visualization_msgs::Marker path_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::LINE_LIST, frame_id);
     geometry_msgs::Point prev_center = convertEigenToGeometryMsg(path[0]);
@@ -98,10 +100,14 @@ void Visualizer::visualizePoints(const std::string& topic_name,
     const std::string& frame_id,
     const ColorType& color,
     const double& size_factor) {
-    if (points.empty()) { return; }
+    if (points.empty()) {
+        return;
+    }
 
     visualization_msgs::Marker points_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::SPHERE_LIST, frame_id);
-    for (auto& point : points) { points_marker.points.push_back(convertEigenToGeometryMsg(point)); }
+    for (auto& point : points) {
+        points_marker.points.push_back(convertEigenToGeometryMsg(point));
+    }
     publishMarker(topic_name, points_marker);
 }
 
@@ -110,7 +116,9 @@ void Visualizer::visualizePaths(const std::string& topic_name,
     const std::string& frame_id,
     const ColorType& color,
     const double& size_factor) {
-    if (paths.empty()) { return; }
+    if (paths.empty()) {
+        return;
+    }
 
     visualization_msgs::MarkerArray path_markers;
     int path_seq = 0;
@@ -149,12 +157,16 @@ void Visualizer::visualizeGraph(const std::string& topic_name,
     const ColorType& vertex_color,
     const ColorType& edge_color,
     const double& size_factor) {
-    if (graph.empty()) { return; }
+    if (graph.empty()) {
+        return;
+    }
     visualization_msgs::MarkerArray graph_markers;
 
     visualization_msgs::Marker vertex_marker =
         createMarker("vertices", vertex_color, voxel_size_ * size_factor, visualization_msgs::Marker::CUBE_LIST, frame_id);
-    for (auto& node : graph) { vertex_marker.points.push_back(convertEigenToGeometryMsg(node->getPosition())); }
+    for (auto& node : graph) {
+        vertex_marker.points.push_back(convertEigenToGeometryMsg(node->getPosition()));
+    }
     graph_markers.markers.push_back(vertex_marker);
 
     visualization_msgs::Marker edge_marker =
@@ -177,7 +189,9 @@ void Visualizer::visualizeTrajectory(const std::string& topic_name,
     const std::string& frame_id,
     const ColorType& color,
     const double& size_factor) {
-    if (trajectory.empty()) { return; }
+    if (trajectory.empty()) {
+        return;
+    }
 
     visualization_msgs::Marker traj_marker = createMarker(topic_name, color, voxel_size_ * size_factor, visualization_msgs::Marker::LINE_LIST, frame_id);
     geometry_msgs::Point prev_center = convertEigenToGeometryMsg(trajectory[0].position_W);
