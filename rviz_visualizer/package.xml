@@ -1,13 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>frontier_explorer</name>
+  <name>rviz_visualizer</name>
   <version>0.0.0</version>
   <description>
-    Frontier exploration.
+    Visualization functions for RViz.
   </description>
 
   <author email="ashwins@iitk.ac.in">Ashwin Shenai</author>
-  <author email="gajendranagar02@gmail.com">Gajendra Nagar</author>
 
   <maintainer email="ashwins@iitk.ac.in">Ashwin Shenai</maintainer>
 
@@ -16,11 +15,9 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
 
+  <depend>mav_msgs</depend>
   <depend>roscpp</depend>
+  <depend>std_msgs</depend>
   <depend>visualization_msgs</depend>
-  <depend>voxblox_ros</depend>
-  <depend>mav_planning_common</depend>
-  <depend>ariitk_planning_msgs</depend>
-  <depend>rviz_visualizer</depend>
 
 </package>

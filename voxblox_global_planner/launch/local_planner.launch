@@ -7,9 +7,9 @@
             <remap from="odometry"                      to="ground_truth/odometry" />
             <remap from="mav_local_planner/esdf_map_in" to="esdf_map" />
             <remap from="mav_local_planner/tsdf_map_in" to="tsdf_map" />
-      
+
             <rosparam file="$(find voxblox_global_planner)/cfg/params.yaml" command="load" />
-          </node>      
+          </node>
     </group>
 
 </launch>

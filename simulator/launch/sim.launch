@@ -8,9 +8,9 @@
 	<!-- world path -->
 	<arg name="world_path" default="$(find simulator)/worlds/maze_house.world"/>
 	<!-- <arg name="world_path" default="$(find rotors_gazebo)/worlds/warehouse.world"/> -->
-    
+
 	<!-- Gazebo configs -->
-	<arg name="gui" 	default="false"/>
+	<arg name="gui" 	default="true"/>
 	<arg name="debug" 	default="false"/>
 	<arg name="verbose" default="false"/>
 	<arg name="paused" 	default="true"/>
@@ -21,14 +21,14 @@
 
 	<include file="$(find gazebo_ros)/launch/empty_world.launch">
 		<arg name="world_name" 	value="$(arg world_path)" />
-		<arg name="debug" 		value="$(arg debug)"/> 
+		<arg name="debug" 		value="$(arg debug)"/>
     	<arg name="paused" 		value="$(arg paused)"/>
 		<arg name="gui" 		value="$(arg gui)"/>
 		<arg name="verbose"		value="$(arg verbose)"/>
 	</include>
 
 	<group ns="$(arg mav_name)">
-		<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">	
+		<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
 			<arg name="mav_name" 			value="$(arg mav_name)" />
 			<arg name="model" 				value="$(find rotors_description)/urdf/mav_with_vi_sensor.gazebo" />
 			<arg name="enable_logging" 		value="$(arg enable_logging)" />
@@ -51,14 +51,14 @@
 		</node>
 
 		<node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true" output="screen">
-			<remap from="odometry" to="ground_truth/odometry" />
+			<remap from="odometry" 			to="ground_truth/odometry" />
 			<rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
 		</node>
 	</group>
-	
-	<include file="$(find simulator)/launch/voxblox_server.launch">
-		<arg name="mav_name" value="$(arg mav_name)"/>
-	</include>
+
+	<!-- <include file="$(find simulator)/launch/voxblox_server.launch"> -->
+		<!-- <arg name="mav_name" value="$(arg mav_name)"/> -->
+	<!-- </include> -->
 
 	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find simulator)/rviz/single_robot_planner.rviz" respawn="true"/>
 

@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>voxblox_global_planner</name>
+  <name>voxblox_local_planner</name>
   <version>0.0.0</version>
   <description>
-    Global planning with voxblox skeletons.
+    Local planning with voxblox skeletons.
   </description>
 
   <author email="ashwins@iitk.ac.in">Ashwin Shenai</author>
@@ -17,12 +17,13 @@
   <buildtool_depend>catkin_simple</buildtool_depend>
 
   <depend>roscpp</depend>
-  <depend>mav_msgs</depend>
-  <depend>mav_planning_common</depend>
-  <depend>mav_trajectory_generation_ros</depend>
-  <depend>voxblox_planning_common</depend>
   <depend>voxblox_ros</depend>
-  <depend>voxblox_skeleton</depend>
+  <depend>rviz_visualizer</depend>
+  <depend>mav_path_smoothing</depend>
+  <depend>mav_trajectory_generation_ros</depend>
   <depend>ariitk_planning_msgs</depend>
+  <depend>mav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf</depend>
 
 </package>

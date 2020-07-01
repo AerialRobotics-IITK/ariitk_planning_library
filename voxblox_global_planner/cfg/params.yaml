@@ -5,7 +5,7 @@ verbose: false                      # Print additional debug and timing informat
 visualize: true                     # Whether to publish information for visualization in RViz.
 
 # frames
-world_frame: world                  # The base frame used when looking up tf transforms. 
+world_frame: world                  # The base frame used when looking up tf transforms.
                                     # This is also the frame that most outputs are given in.
 frame_id: world                     # Global fixed frame id.
 local_frame_id: world               # Frame name for the quadrotor base.
@@ -13,16 +13,16 @@ local_frame_id: world               # Frame name for the quadrotor base.
 # robot constraints
 robot_radius: 0.45                  # Robot sphere radius, to be used for planning,  in *meters*.
 traversability_radius: 0.45         # Radius in *meters*, of the space around the robot to be considered as occupied.
-                                    # Recommended value: equal to robot_radius     
+                                    # Recommended value: equal to robot_radius
 
 # esdf server params
 publish_tsdf_map: false             # Whether to publish the complete TSDF map periodically over ROS topics.
 publish_esdf_map: false             # Whether to publish the complete ESDF map periodically over ROS topics.
-publish_pointclouds: false          # If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated 
+publish_pointclouds: false          # If true the tsdf and esdf (if generated) is published as a pointcloud when the mesh is updated
 publish_slices: false               # Whether to publish TSDF and ESDF pointcloud slices at the height specified by $slice_level
 publish_traversable: false          # Whether to display a traversability pointcloud from the ESDF server.
 publish_pointclouds_on_update: false
-update_mesh_every_n_sec: 0.0        # Rate at which the mesh topic will be published to,in *seconds*, a value of 0 disables. 
+update_mesh_every_n_sec: 0.0        # Rate at which the mesh topic will be published to,in *seconds*, a value of 0 disables.
                                     # This will not trigger any other mesh operations, such as generating a ply file.
 update_esdf_every_n_sec: 0.0        # How often the ESDF map should be updated, in *seconds*
 publish_map_every_n_sec: 0.0        # Rate at which the TSDF and ESDF maps are published, if they are published, in *seconds*.

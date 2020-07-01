@@ -1,9 +1,9 @@
-#include <frontier_explorer/frontier_evaluator.hpp>
+#include <frontier_explorer/goal_selector.hpp>
 
 using namespace ariitk::frontier_explorer;
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "frontier_evaluator");
+    ros::init(argc, argv, "frontier_explorer");
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
 
@@ -12,18 +12,18 @@ int main(int argc, char** argv) {
 
     FLAGS_alsologtostderr = true;
 
-    FrontierEvaluator evaluator(nh, nh_private);
+    GoalSelector selector(nh, nh_private);
 
     double update_rate = 10.0;
     nh_private.getParam("update_frontiers_every_n_sec", update_rate);
 
     ros::Rate loop_rate(update_rate);
-    
-    while(ros::ok()) {
+
+    while (ros::ok()) {
         ros::spinOnce();
-        evaluator.run();
+        selector.run();
         loop_rate.sleep();
     }
-    
+
     return 0;
 }
